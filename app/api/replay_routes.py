@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,7 @@ from app.db.repository import (
     trace_span_dict,
 )
 from app.db.session import get_db
+from app.replay.formats import trace_to_jsonl, trace_to_otel
 
 router = APIRouter(prefix="/api/v1")
 
@@ -69,6 +70,14 @@ class EventBatchPayload(BaseModel):
 class ComparePayload(BaseModel):
     left_trace_id: str
     right_trace_id: str
+
+
+class PinPayload(BaseModel):
+    pinned: bool = True
+
+
+class TraceImportPayload(BaseModel):
+    bundle: dict[str, Any]
 
 
 @router.post("/traces")
@@ -150,11 +159,39 @@ def run_detail(trace_id: str, db: Session = Depends(get_db)) -> dict:
 
 
 @router.get("/runs/{trace_id}/export")
-def run_export(trace_id: str, db: Session = Depends(get_db)) -> JSONResponse:
+def run_export(
+    trace_id: str,
+    format: str = Query(default="json", pattern="^(json|jsonl|otel)$"),
+    db: Session = Depends(get_db),
+):
     exported = Repository(db).trace_export(trace_id)
     if exported is None:
         raise HTTPException(404, "Trace not found.")
+    if format == "jsonl":
+        return PlainTextResponse(trace_to_jsonl(exported), media_type="application/x-ndjson")
+    if format == "otel":
+        return JSONResponse(trace_to_otel(exported))
     return JSONResponse(exported)
+
+
+@router.post("/runs/import")
+def import_run(payload: TraceImportPayload, db: Session = Depends(get_db)) -> dict:
+    repo = Repository(db)
+    try:
+        run = repo.import_trace_bundle(payload.bundle)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    exported = repo.trace_export(run.id)
+    assert exported is not None
+    return exported
+
+
+@router.post("/runs/{trace_id}/pin")
+def pin_run(trace_id: str, payload: PinPayload, db: Session = Depends(get_db)) -> dict:
+    run = Repository(db).pin_trace(trace_id, payload.pinned)
+    if run is None:
+        raise HTTPException(404, "Trace not found.")
+    return trace_run_dict(run)
 
 
 @router.post("/compare")

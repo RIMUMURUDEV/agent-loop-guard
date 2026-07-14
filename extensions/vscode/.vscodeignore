@@ -1,5 +1,7 @@
 .vscode/**
-node_modules/**
+.gitignore
 *.vsix
+node_modules/**
+**/*.map
 package-lock.json
 npm-debug.log

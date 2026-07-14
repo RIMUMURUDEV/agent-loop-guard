@@ -84,7 +84,7 @@ h2 {
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 12px;
   margin-bottom: 18px;
 }
@@ -165,6 +165,60 @@ button, .button {
   display: inline-flex;
   align-items: center;
   min-height: 36px;
+}
+
+button.danger {
+  background: #a32929;
+  border-color: #a32929;
+}
+
+button.secondary {
+  background: #fff;
+  color: #0c5a9e;
+}
+
+.timeline {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.timeline-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 220px) 1fr 80px;
+  gap: 10px;
+  align-items: center;
+  padding-left: calc(var(--depth) * 12px);
+}
+
+.timeline-track {
+  position: relative;
+  height: 12px;
+  border-radius: 4px;
+  background: #edf1f5;
+  overflow: hidden;
+}
+
+.timeline-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  min-width: 3px;
+  background: #2d7d46;
+}
+
+.timeline-bar.status-error,
+.timeline-bar.status-blocked {
+  background: #b43b3b;
+}
+
+.approval-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) 180px auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #e7ebf0;
 }
 
 .button.secondary {
@@ -264,6 +318,10 @@ input, select {
   }
 
   .inline-form {
+    grid-template-columns: 1fr;
+  }
+
+  .approval-row {
     grid-template-columns: 1fr;
   }
 }

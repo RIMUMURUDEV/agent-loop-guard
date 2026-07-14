@@ -1,0 +1,18 @@
+version: 1
+mode: enforce
+default_action: confirm
+hide_denied_tools: true
+servers:
+  filesystem:
+    tools:
+      read_file:
+        action: allow
+        paths: ["./**"]
+      list_directory:
+        action: allow
+        paths: ["./**"]
+      write_file:
+        action: confirm
+        paths: ["./**"]
+      delete_file:
+        action: deny

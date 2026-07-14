@@ -9,6 +9,14 @@ htmlcov/
 data/*.db
 data/*.db-*
 data/*.log
+data/release-*/
 agent-loop-guard.yml
+.agent-loop-guard/
+benchmark-observations.jsonl
+benchmark-observations.parquet
+sandbox-export.zip
+dist/
+build/
+site/
 extensions/vscode/node_modules/
 extensions/vscode/*.vsix

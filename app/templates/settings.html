@@ -11,9 +11,10 @@
       <tr><th>Default mode</th><td>{{ config.default_mode }}</td></tr>
       <tr><th>Default provider</th><td>{{ config.default_provider }}</td></tr>
       <tr><th>Full content logging</th><td>{{ config.full_content_logging }}</td></tr>
+      <tr><th>Product telemetry</th><td>disabled</td></tr>
+      <tr><th>MCP policy</th><td><code>{{ config.mcp_policy_path }}</code></td></tr>
       <tr><th>Body limit</th><td>{{ config.body_limit_bytes }} bytes</td></tr>
     </tbody>
   </table>
 </section>
 {% endblock %}
-

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -53,6 +53,20 @@ class AppConfig:
     openai_api_key: str | None = None
     anthropic_base_url: str = "https://api.anthropic.com"
     anthropic_api_key: str | None = None
+    mcp_policy_path: str = "mcp-policy.yml"
+    mcp_approval_timeout_seconds: int = 30
+    mcp_allowed_origins: list[str] = field(
+        default_factory=lambda: ["http://127.0.0.1", "http://localhost"]
+    )
+    mcp_servers: dict[str, dict[str, Any]] = field(
+        default_factory=lambda: {
+            "filesystem": {
+                "name": "Demo filesystem server",
+                "transport": "mock",
+                "target": "mock://filesystem",
+            }
+        }
+    )
 
     @classmethod
     def from_env(cls) -> AppConfig:
@@ -117,6 +131,17 @@ class AppConfig:
             anthropic_api_key=os.getenv(
                 "ANTHROPIC_API_KEY", _get(data, "providers.anthropic.api_key", None)
             ),
+            mcp_policy_path=os.getenv(
+                "ALG_MCP_POLICY", str(_get(data, "mcp.policy", defaults.mcp_policy_path))
+            ),
+            mcp_approval_timeout_seconds=_int(
+                os.getenv("ALG_MCP_APPROVAL_TIMEOUT_SECONDS"),
+                int(_get(data, "mcp.approval_timeout_seconds", 30)),
+            ),
+            mcp_allowed_origins=list(
+                _get(data, "mcp.allowed_origins", defaults.mcp_allowed_origins)
+            ),
+            mcp_servers=dict(_get(data, "mcp.servers", defaults.mcp_servers)),
         )
 
     def ensure_storage_parent(self) -> None:
@@ -157,4 +182,15 @@ providers:
     type: anthropic
     base_url: https://api.anthropic.com
     api_key_env: ANTHROPIC_API_KEY
+mcp:
+  policy: mcp-policy.yml
+  approval_timeout_seconds: 30
+  allowed_origins:
+    - http://127.0.0.1
+    - http://localhost
+  servers:
+    filesystem:
+      name: Demo filesystem server
+      transport: mock
+      target: mock://filesystem
 """

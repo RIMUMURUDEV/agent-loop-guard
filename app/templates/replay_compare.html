@@ -32,6 +32,23 @@
 </section>
 
 <section class="panel">
+  <h2>Aligned Steps</h2>
+  <table>
+    <thead><tr><th>Step</th><th>Baseline</th><th>Candidate</th><th>Duration Delta</th></tr></thead>
+    <tbody>
+    {% for step in result.aligned_steps %}
+      <tr>
+        <td><code>{{ step.step }}</code></td>
+        <td>{{ step.left_status or '-' }} / {{ step.left_duration_ms if step.left_duration_ms is not none else '-' }} ms</td>
+        <td>{{ step.right_status or '-' }} / {{ step.right_duration_ms if step.right_duration_ms is not none else '-' }} ms</td>
+        <td>{{ step.duration_delta_ms if step.duration_delta_ms is not none else '-' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
   <h2>Delta</h2>
   <table>
     <thead><tr><th>Metric</th><th>Candidate - Baseline</th></tr></thead>

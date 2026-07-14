@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -12,6 +13,9 @@ from app.db.repository import (
     Repository,
     agent_dict,
     event_dict,
+    mcp_approval_dict,
+    mcp_event_dict,
+    mcp_server_dict,
     policy_dict,
     request_dict,
     session_dict,
@@ -29,12 +33,15 @@ templates = Jinja2Templates(directory=str(Path(__file__).resolve().parents[1] / 
 @router.get("/")
 def dashboard(request: Request, db: Session = Depends(get_db)):
     repo = Repository(db)
+    approvals = repo.list_mcp_approvals(pending_only=True)
     return templates.TemplateResponse(
         request,
         "dashboard.html",
         {
             "stats": repo.aggregate_stats(),
             "sessions": [session_dict(item) for item in repo.list_sessions(10)],
+            "pending_approvals": len(approvals),
+            "docker_available": shutil.which("docker") is not None,
         },
     )
 
@@ -88,6 +95,32 @@ def replay_page(
     )
 
 
+@router.get("/mcp")
+def mcp_page(request: Request, db: Session = Depends(get_db)):
+    repo = Repository(db)
+    return templates.TemplateResponse(
+        request,
+        "mcp.html",
+        {
+            "servers": [mcp_server_dict(item) for item in repo.list_mcp_servers()],
+            "events": [mcp_event_dict(item) for item in repo.list_mcp_events(100)],
+            "approvals": [mcp_approval_dict(item) for item in repo.list_mcp_approvals()],
+            "policy_path": request.app.state.config.mcp_policy_path,
+        },
+    )
+
+
+@router.post("/mcp/approvals/{approval_id}/decision")
+async def mcp_approval_ui(
+    approval_id: str, request: Request, db: Session = Depends(get_db)
+):
+    form = await request.form()
+    action = str(form.get("action") or "deny")
+    scope = str(form.get("scope") or "once")
+    Repository(db).decide_mcp_approval(approval_id, action, scope)
+    return RedirectResponse("/mcp", status_code=303)
+
+
 @router.post("/replay/compare")
 async def replay_compare_page(request: Request, db: Session = Depends(get_db)):
     form = await request.form()
@@ -109,16 +142,38 @@ def replay_detail_page(trace_id: str, request: Request, db: Session = Depends(ge
     run = repo.get_trace_run(trace_id)
     if run is None:
         raise HTTPException(404, "Trace not found.")
+    spans = [trace_span_dict(item) for item in repo.trace_spans(trace_id)]
+    if spans:
+        first_start = min(span["start_ns"] for span in spans)
+        last_end = max((span["end_ns"] or span["start_ns"]) for span in spans)
+        total = max(1, last_end - first_start)
+        parents = {span["id"]: span.get("parent_span_id") for span in spans}
+        for span in spans:
+            depth = 0
+            parent = span.get("parent_span_id")
+            while parent and depth < 8:
+                depth += 1
+                parent = parents.get(parent)
+            span["depth"] = depth
+            span["offset_pct"] = ((span["start_ns"] - first_start) / total) * 100
+            span["width_pct"] = max(1.5, (max(1, span["duration_ms"] * 1_000_000) / total) * 100)
     return templates.TemplateResponse(
         request,
         "replay_detail.html",
         {
             "run": trace_run_dict(run),
-            "spans": [trace_span_dict(item) for item in repo.trace_spans(trace_id)],
+            "spans": spans,
             "events": [trace_event_dict(item) for item in repo.trace_events(trace_id)],
             "artifacts": [trace_artifact_dict(item) for item in repo.trace_artifacts(trace_id)],
         },
     )
+
+
+@router.post("/replay/{trace_id}/pin")
+async def replay_pin_page(trace_id: str, request: Request, db: Session = Depends(get_db)):
+    form = await request.form()
+    Repository(db).pin_trace(trace_id, str(form.get("pinned") or "true") == "true")
+    return RedirectResponse(f"/replay/{trace_id}", status_code=303)
 
 
 @router.post("/sessions/{session_id}/pause")

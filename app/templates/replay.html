@@ -43,7 +43,7 @@
     <tbody>
     {% for run in runs %}
       <tr>
-        <td><a href="/replay/{{ run.id }}">{{ run.id }}</a></td>
+        <td>{% if run.pinned %}<span title="Pinned">&#9733;</span> {% endif %}<a href="/replay/{{ run.id }}">{{ run.id }}</a></td>
         <td><span class="status status-{{ run.status }}">{{ run.status }}</span></td>
         <td>{{ run.task_id or "-" }}</td>
         <td>{{ run.agent_name or "-" }}</td>

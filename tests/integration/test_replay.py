@@ -118,3 +118,58 @@ def test_replay_ui_pages_render(client: TestClient) -> None:
     assert "Trace Runs" in listing.text
     assert detail.status_code == 200
     assert "Timeline" in detail.text
+
+
+def test_replay_formats_pin_and_repeatable_import(client: TestClient) -> None:
+    created = client.post(
+        "/api/v1/traces",
+        json={
+            "trace_id": "trace_portable",
+            "task_id": "portable-task",
+            "spans": [
+                {
+                    "span_id": "portable_parent",
+                    "name": "tool.call",
+                    "start_ns": 10,
+                    "end_ns": 20,
+                    "events": [{"name": "file.change"}],
+                },
+                {
+                    "span_id": "portable_child",
+                    "parent_span_id": "portable_parent",
+                    "name": "command.exec",
+                    "start_ns": 12,
+                    "end_ns": 18,
+                },
+            ],
+        },
+    )
+    assert created.status_code == 200
+
+    pinned = client.post("/api/v1/runs/trace_portable/pin", json={"pinned": True})
+    assert pinned.status_code == 200
+    assert pinned.json()["pinned"] is True
+
+    jsonl = client.get("/api/v1/runs/trace_portable/export?format=jsonl")
+    assert jsonl.status_code == 200
+    assert '"record_type": "run"' in jsonl.text
+
+    otel = client.get("/api/v1/runs/trace_portable/export?format=otel")
+    assert otel.status_code == 200
+    otel_spans = otel.json()["resourceSpans"][0]["scopeSpans"][0]["spans"]
+    assert all(len(span["traceId"]) == 32 for span in otel_spans)
+    assert all(len(span["spanId"]) == 16 for span in otel_spans)
+
+    bundle = created.json()
+    first_import = client.post("/api/v1/runs/import", json={"bundle": bundle})
+    second_import = client.post("/api/v1/runs/import", json={"bundle": bundle})
+    assert first_import.status_code == 200
+    assert second_import.status_code == 200
+    assert first_import.json()["run"]["id"] != second_import.json()["run"]["id"]
+    for imported in (first_import.json(), second_import.json()):
+        span_ids = {span["id"] for span in imported["spans"]}
+        assert all(
+            span["parent_span_id"] is None or span["parent_span_id"] in span_ids
+            for span in imported["spans"]
+        )
+        assert all(event["span_id"] in span_ids for event in imported["events"])

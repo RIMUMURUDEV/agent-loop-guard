@@ -21,6 +21,20 @@
 </section>
 
 <section class="panel">
+  <h2>Modules</h2>
+  <table>
+    <thead><tr><th>Module</th><th>Interface</th><th>Local status</th></tr></thead>
+    <tbody>
+      <tr><td>Loop Guard</td><td><a href="/sessions">Sessions</a></td><td><span class="status status-ok">ready</span></td></tr>
+      <tr><td>MCP Firewall</td><td><a href="/mcp">Approvals and audit</a></td><td>{{ pending_approvals }} pending</td></tr>
+      <tr><td>Replay</td><td><a href="/replay">Trace explorer</a></td><td><span class="status status-ok">ready</span></td></tr>
+      <tr><td>Benchmark Lab</td><td><code>alg bench</code></td><td><span class="status status-ok">ready</span></td></tr>
+      <tr><td>Sandbox</td><td><code>alg sandbox</code></td><td><span class="status status-{{ 'ok' if docker_available else 'paused' }}">{{ 'Docker found' if docker_available else 'Docker required' }}</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
   <h2>Recent Sessions</h2>
   <table>
     <thead><tr><th>ID</th><th>Status</th><th>Requests</th><th>Flags</th><th>Blocks</th><th>Tokens</th></tr></thead>

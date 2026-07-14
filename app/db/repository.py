@@ -15,6 +15,11 @@ from app.db.models import (
     Agent,
     Event,
     GuardSession,
+    MCPApproval,
+    MCPDecisionEvent,
+    MCPServer,
+    MCPSession,
+    MCPToolSnapshot,
     Policy,
     Project,
     RequestRecord,
@@ -25,6 +30,7 @@ from app.db.models import (
     TraceSpan,
     utcnow,
 )
+from app.replay.costs import estimate_cost_micros
 
 
 def new_id(prefix: str) -> str:
@@ -161,6 +167,20 @@ def ensure_seed_data(db: Session, config: AppConfig) -> None:
     if not existing_policy_count:
         db.add_all(default_policies(config.default_project_id))
 
+    for server_id, row in config.mcp_servers.items():
+        server = db.get(MCPServer, server_id)
+        target = str(row.get("target") or "mock://filesystem")
+        if server is None:
+            db.add(
+                MCPServer(
+                    id=server_id,
+                    name=str(row.get("name") or server_id),
+                    transport=str(row.get("transport") or "mock"),
+                    target=target,
+                    fingerprint=key_hash(target),
+                )
+            )
+
     db.commit()
 
 
@@ -176,6 +196,243 @@ class Repository:
 
     def project(self, project_id: str) -> Project | None:
         return self.db.get(Project, project_id)
+
+    def mcp_server(self, server_id: str) -> MCPServer | None:
+        return self.db.get(MCPServer, server_id)
+
+    def ensure_mcp_server(
+        self, server_id: str, name: str, transport: str, target: str
+    ) -> MCPServer:
+        server = self.db.get(MCPServer, server_id)
+        if server is None:
+            server = MCPServer(
+                id=server_id,
+                name=name,
+                transport=transport,
+                target=target,
+                fingerprint=key_hash(target),
+            )
+            self.db.add(server)
+            self.db.commit()
+        return server
+
+    def list_mcp_servers(self) -> list[MCPServer]:
+        return list(self.db.scalars(select(MCPServer).order_by(MCPServer.name)))
+
+    def start_mcp_session(
+        self,
+        server_id: str,
+        *,
+        client_name: str | None = None,
+        protocol_version: str | None = None,
+        mode: str = "enforce",
+        session_id: str | None = None,
+    ) -> MCPSession:
+        session = MCPSession(
+            id=session_id or new_id("mcp_ses"),
+            server_id=server_id,
+            client_name=client_name,
+            protocol_version=protocol_version,
+            mode=mode,
+        )
+        self.db.add(session)
+        self.db.commit()
+        return session
+
+    def end_mcp_session(self, session_id: str) -> MCPSession | None:
+        session = self.db.get(MCPSession, session_id)
+        if session is None:
+            return None
+        session.ended_at = utcnow()
+        self.db.commit()
+        return session
+
+    def record_mcp_tools(
+        self, session_id: str, server_id: str, tools: list[dict[str, Any]]
+    ) -> None:
+        for tool in tools:
+            schema = tool.get("inputSchema") or {"type": "object"}
+            name = str(tool.get("name") or "unknown")
+            schema_json = json.dumps(schema, ensure_ascii=False, sort_keys=True)
+            risk_tags = []
+            lowered = name.lower()
+            if any(token in lowered for token in ("write", "delete", "remove")):
+                risk_tags.append("filesystem_write")
+            if any(token in lowered for token in ("exec", "shell", "command")):
+                risk_tags.append("command_execution")
+            self.db.add(
+                MCPToolSnapshot(
+                    id=new_id("mcp_tool"),
+                    session_id=session_id,
+                    server_id=server_id,
+                    tool_name=name,
+                    schema_hash=key_hash(schema_json),
+                    schema_json=_json_dumps(schema),
+                    risk_tags_json=json.dumps(risk_tags),
+                )
+            )
+        self.db.commit()
+
+    def mcp_tool_schema(self, server_id: str, tool_name: str) -> dict[str, Any] | None:
+        snapshot = self.db.scalar(
+            select(MCPToolSnapshot)
+            .where(
+                MCPToolSnapshot.server_id == server_id,
+                MCPToolSnapshot.tool_name == tool_name,
+            )
+            .order_by(desc(MCPToolSnapshot.created_at))
+            .limit(1)
+        )
+        return _json_loads(snapshot.schema_json) if snapshot else None
+
+    def record_mcp_decision(
+        self,
+        *,
+        server_id: str,
+        session_id: str | None,
+        request_id: str | int | None,
+        tool_name: str,
+        argument_hash: str,
+        policy_version: str,
+        action: str,
+        reason: str,
+        rule_id: str | None,
+        mode: str,
+        attributes: dict[str, Any] | None = None,
+    ) -> MCPDecisionEvent:
+        event = MCPDecisionEvent(
+            id=new_id("mcp_evt"),
+            session_id=session_id,
+            server_id=server_id,
+            request_id=str(request_id) if request_id is not None else None,
+            tool_name=tool_name,
+            argument_hash=argument_hash,
+            policy_version=policy_version,
+            action=action,
+            reason=reason[:300],
+            rule_id=rule_id,
+            mode=mode,
+            attributes_json=_json_dumps(attributes or {}),
+        )
+        self.db.add(event)
+        self.db.commit()
+
+        now_ns = _now_ns()
+        run = self.create_trace_run(
+            {
+                "project_id": "default",
+                "task_id": f"mcp:{server_id}:{request_id or event.id}",
+                "agent_name": "mcp-permission-firewall",
+                "status": "blocked" if action == "deny" else "ok",
+                "failure_tag": "MCP_POLICY_BLOCK" if action == "deny" else None,
+                "start_ns": now_ns,
+                "end_ns": now_ns,
+                "attributes": {"source": "mcp", "mcp.server_id": server_id},
+            }
+        )
+        root = self.trace_spans(run.id)[0]
+        span = self.add_trace_span(
+            run.id,
+            {
+                "parent_span_id": root.id,
+                "name": "tool.call",
+                "status": "blocked" if action == "deny" else "ok",
+                "start_ns": now_ns,
+                "end_ns": now_ns,
+                "attributes": {
+                    "tool.name": tool_name,
+                    "tool.arguments_hash": argument_hash,
+                    "mcp.server_id": server_id,
+                    "policy.action": action,
+                },
+            },
+        )
+        self.add_trace_events(
+            run.id,
+            [
+                {
+                    "span_id": span.id if span else None,
+                    "name": "policy.decision",
+                    "severity": "error" if action == "deny" else "info",
+                    "timestamp_ns": now_ns,
+                    "attributes": {
+                        "engine": "mcp",
+                        "action": action,
+                        "rule_id": rule_id,
+                        "reason": reason,
+                        "policy_version": policy_version,
+                    },
+                }
+            ],
+        )
+        event.trace_id = run.id
+        self.db.commit()
+        return event
+
+    def create_mcp_approval(
+        self, decision_event_id: str, argument_hash: str, timeout_seconds: int
+    ) -> MCPApproval:
+        approval = MCPApproval(
+            id=new_id("apr"),
+            decision_event_id=decision_event_id,
+            status="pending",
+            scope="once",
+            argument_hash=argument_hash,
+            expires_at=utcnow() + timedelta(seconds=max(0, timeout_seconds)),
+        )
+        self.db.add(approval)
+        self.db.commit()
+        return approval
+
+    def decide_mcp_approval(
+        self, approval_id: str, status: str, scope: str = "once"
+    ) -> MCPApproval | None:
+        approval = self.db.get(MCPApproval, approval_id)
+        if approval is None or approval.status != "pending" or _aware(approval.expires_at) < utcnow():
+            return None
+        approval.status = "allowed" if status == "allow" else "denied"
+        approval.scope = "session" if scope == "session" else "once"
+        approval.decided_at = utcnow()
+        self.db.commit()
+        return approval
+
+    def consume_mcp_approval(
+        self, server_id: str, tool_name: str, argument_hash: str, session_id: str | None
+    ) -> MCPApproval | None:
+        statement = (
+            select(MCPApproval)
+            .join(MCPDecisionEvent, MCPDecisionEvent.id == MCPApproval.decision_event_id)
+            .where(
+                MCPApproval.status == "allowed",
+                MCPApproval.argument_hash == argument_hash,
+                MCPApproval.expires_at >= utcnow(),
+                MCPDecisionEvent.server_id == server_id,
+                MCPDecisionEvent.tool_name == tool_name,
+            )
+            .order_by(desc(MCPApproval.decided_at))
+        )
+        if session_id:
+            statement = statement.where(MCPDecisionEvent.session_id == session_id)
+        approval = self.db.scalar(statement.limit(1))
+        if approval and approval.scope == "once":
+            approval.status = "consumed"
+            self.db.commit()
+        return approval
+
+    def list_mcp_approvals(self, pending_only: bool = False) -> list[MCPApproval]:
+        statement = select(MCPApproval)
+        if pending_only:
+            statement = statement.where(MCPApproval.status == "pending")
+        return list(self.db.scalars(statement.order_by(desc(MCPApproval.created_at))))
+
+    def list_mcp_events(self, limit: int = 200) -> list[MCPDecisionEvent]:
+        return list(
+            self.db.scalars(
+                select(MCPDecisionEvent)
+                .order_by(desc(MCPDecisionEvent.created_at))
+                .limit(limit)
+            )
+        )
 
     def policies(self, project_id: str) -> list[Policy]:
         return list(
@@ -570,6 +827,15 @@ class Repository:
         self.db.add(span)
         run.span_count = (run.span_count or 0) + 1
         run.model = run.model or model
+        estimated_cost, cost_estimated = estimate_cost_micros(
+            model,
+            int(tokens.get("input_tokens", 0)),
+            int(tokens.get("output_tokens", 0)),
+        )
+        run.total_cost_micros = (run.total_cost_micros or 0) + estimated_cost
+        run.attributes_json = _json_dumps(
+            {**_json_loads(run.attributes_json), "cost.estimated": cost_estimated}
+        )
         run.failure_tag = reason_code or run.failure_tag
         if span_status in {"error", "blocked"}:
             run.status = span_status
@@ -749,8 +1015,38 @@ class Repository:
         )
         if first_start is not None and last_end is not None:
             run.duration_ms = max(0, int((int(last_end) - int(first_start)) / 1_000_000))
+        if not run.failure_tag:
+            run.failure_tag = self._classify_trace_failure(trace_id)
         run.updated_at = utcnow()
         self.db.commit()
+
+    def _classify_trace_failure(self, trace_id: str) -> str | None:
+        spans = self.trace_spans(trace_id)
+        events = self.trace_events(trace_id)
+        details = " ".join(
+            [span.name + " " + span.status + " " + span.attributes_json for span in spans]
+            + [event.name + " " + event.attributes_json for event in events]
+        ).lower()
+        if "loop_" in details or "loop" in details:
+            return "loop"
+        if "timeout" in details:
+            return "timeout"
+        if "rate_limit" in details or "rate limit" in details:
+            return "rate_limit"
+        if "policy" in details and ("blocked" in details or '"action": "deny"' in details):
+            return "policy_block"
+        if "test" in details and ("failed" in details or "error" in details):
+            return "test_failure"
+        return None
+
+    def pin_trace(self, trace_id: str, pinned: bool = True) -> TraceRun | None:
+        run = self.db.get(TraceRun, trace_id)
+        if run is None:
+            return None
+        run.pinned = pinned
+        run.updated_at = utcnow()
+        self.db.commit()
+        return run
 
     def list_trace_runs(
         self, limit: int = 50, project_id: str | None = None, query: str | None = None
@@ -810,6 +1106,75 @@ class Repository:
             "artifacts": [trace_artifact_dict(item) for item in self.trace_artifacts(trace_id)],
         }
 
+    def import_trace_bundle(self, bundle: dict[str, Any]) -> TraceRun:
+        run_data = dict(bundle.get("run") or {})
+        if not run_data:
+            raise ValueError("bundle.run is required")
+
+        requested_id = str(run_data.get("id") or run_data.get("trace_id") or new_id("trc"))
+        trace_id = requested_id if self.get_trace_run(requested_id) is None else new_id("trc")
+        run_data["trace_id"] = trace_id
+        run_data.pop("id", None)
+        run = self.create_trace_run(run_data)
+        root = next(
+            span
+            for span in self.trace_spans(run.id)
+            if span.parent_span_id is None and span.name == "agent.run"
+        )
+
+        source_spans = [dict(item) for item in bundle.get("spans", [])]
+        source_root_ids = {
+            str(item.get("id") or item.get("span_id"))
+            for item in source_spans
+            if item.get("name") == "agent.run" and item.get("parent_span_id") is None
+        }
+        id_map = {source_id: root.id for source_id in source_root_ids}
+        for item in source_spans:
+            source_id = str(item.get("id") or item.get("span_id") or new_id("source"))
+            id_map.setdefault(source_id, new_id("spn"))
+
+        pending = [
+            item
+            for item in source_spans
+            if str(item.get("id") or item.get("span_id")) not in source_root_ids
+        ]
+        inserted = set(source_root_ids)
+        while pending:
+            ready = [
+                item
+                for item in pending
+                if not item.get("parent_span_id")
+                or str(item["parent_span_id"]) in inserted
+                or str(item["parent_span_id"]) not in id_map
+            ]
+            if not ready:
+                ready = [pending[0]]
+            for item in ready:
+                source_id = str(item.get("id") or item.get("span_id"))
+                parent_id = str(item.get("parent_span_id") or "")
+                span_data = dict(item)
+                span_data["span_id"] = id_map[source_id]
+                span_data["parent_span_id"] = id_map.get(parent_id, root.id)
+                self.add_trace_span(run.id, span_data)
+                inserted.add(source_id)
+                pending.remove(item)
+
+        events = []
+        for item in bundle.get("events", []):
+            event = dict(item)
+            source_span_id = str(event.get("span_id") or "")
+            event["event_id"] = new_id("tev")
+            event["span_id"] = id_map.get(source_span_id, root.id)
+            events.append(event)
+        if events:
+            self.add_trace_events(run.id, events)
+
+        for item in bundle.get("artifacts", []):
+            artifact = dict(item)
+            artifact["artifact_id"] = new_id("art")
+            self.add_trace_artifact(run.id, artifact)
+        return self.get_trace_run(run.id) or run
+
     def compare_traces(self, left_id: str, right_id: str) -> dict[str, Any] | None:
         left = self.get_trace_run(left_id)
         right = self.get_trace_run(right_id)
@@ -829,12 +1194,43 @@ class Repository:
             name: right_by_name.get(name, 0) - left_by_name.get(name, 0)
             for name in sorted(set(left_by_name) | set(right_by_name))
         }
+        left_occurrences: dict[str, int] = {}
+        right_occurrences: dict[str, int] = {}
+
+        def keyed(spans: list[TraceSpan], counters: dict[str, int]) -> dict[str, TraceSpan]:
+            result: dict[str, TraceSpan] = {}
+            for span in spans:
+                counters[span.name] = counters.get(span.name, 0) + 1
+                result[f"{span.name}#{counters[span.name]}"] = span
+            return result
+
+        left_keyed = keyed(left_spans, left_occurrences)
+        right_keyed = keyed(right_spans, right_occurrences)
+        aligned_steps = []
+        for key in sorted(set(left_keyed) | set(right_keyed)):
+            left_span = left_keyed.get(key)
+            right_span = right_keyed.get(key)
+            aligned_steps.append(
+                {
+                    "step": key,
+                    "left_status": left_span.status if left_span else None,
+                    "right_status": right_span.status if right_span else None,
+                    "left_duration_ms": left_span.duration_ms if left_span else None,
+                    "right_duration_ms": right_span.duration_ms if right_span else None,
+                    "duration_delta_ms": (
+                        right_span.duration_ms - left_span.duration_ms
+                        if left_span and right_span
+                        else None
+                    ),
+                }
+            )
         return {
             "schema_version": "trace.compare.v1",
             "left": trace_run_dict(left),
             "right": trace_run_dict(right),
             "delta": deltas,
             "span_name_delta": span_name_deltas,
+            "aligned_steps": aligned_steps,
         }
 
     def event(
@@ -1043,4 +1439,50 @@ def trace_artifact_dict(artifact: TraceArtifact) -> dict[str, Any]:
         "sha256": artifact.sha256,
         "attributes": _json_loads(artifact.attributes_json),
         "created_at": artifact.created_at.isoformat(),
+    }
+
+
+def mcp_server_dict(server: MCPServer) -> dict[str, Any]:
+    return {
+        "id": server.id,
+        "name": server.name,
+        "transport": server.transport,
+        "target": server.target,
+        "fingerprint": server.fingerprint,
+        "enabled": server.enabled,
+        "first_seen_at": server.first_seen_at.isoformat(),
+    }
+
+
+def mcp_event_dict(event: MCPDecisionEvent) -> dict[str, Any]:
+    return {
+        "id": event.id,
+        "session_id": event.session_id,
+        "server_id": event.server_id,
+        "trace_id": event.trace_id,
+        "request_id": event.request_id,
+        "tool_name": event.tool_name,
+        "argument_hash": event.argument_hash,
+        "policy_version": event.policy_version,
+        "action": event.action,
+        "reason": event.reason,
+        "rule_id": event.rule_id,
+        "mode": event.mode,
+        "latency_ms": event.latency_ms,
+        "result_status": event.result_status,
+        "attributes": _json_loads(event.attributes_json),
+        "created_at": event.created_at.isoformat(),
+    }
+
+
+def mcp_approval_dict(approval: MCPApproval) -> dict[str, Any]:
+    return {
+        "id": approval.id,
+        "decision_event_id": approval.decision_event_id,
+        "status": approval.status,
+        "scope": approval.scope,
+        "argument_hash": approval.argument_hash,
+        "expires_at": approval.expires_at.isoformat(),
+        "decided_at": approval.decided_at.isoformat() if approval.decided_at else None,
+        "created_at": approval.created_at.isoformat(),
     }

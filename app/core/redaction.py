@@ -42,6 +42,24 @@ def redact_headers(headers: dict[str, str]) -> dict[str, str]:
     return safe
 
 
+def redact_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            str(key): "[REDACTED]"
+            if str(key).lower() in SENSITIVE_HEADERS
+            or any(part in str(key).lower() for part in ("token", "secret", "password", "api_key"))
+            else redact_value(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [redact_value(item) for item in value]
+    if isinstance(value, tuple):
+        return [redact_value(item) for item in value]
+    if isinstance(value, str):
+        return redact_text(value)
+    return value
+
+
 def safe_preview(value: Any, full_content_logging: bool = False, max_chars: int = 500) -> str:
     if not full_content_logging:
         if isinstance(value, dict):
@@ -64,4 +82,3 @@ def safe_json_bytes(content: bytes, max_chars: int = 500) -> str:
     if len(text) > max_chars:
         return text[:max_chars] + "...[truncated]"
     return text
-
