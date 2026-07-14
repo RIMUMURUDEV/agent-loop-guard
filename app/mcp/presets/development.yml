@@ -1,0 +1,25 @@
+version: 1
+mode: enforce
+default_action: confirm
+hide_denied_tools: true
+servers:
+  filesystem:
+    tools:
+      read_file: {action: allow, paths: ["./**"]}
+      write_file: {action: confirm, paths: ["./**"]}
+      delete_file: {action: deny}
+  shell:
+    tools:
+      execute_command:
+        action: confirm
+        deny_patterns: ["rm -rf", "curl * | sh", "git push*"]
+  http:
+    tools:
+      fetch:
+        action: allow
+        hosts: ["api.github.com", "pypi.org", "registry.npmjs.org"]
+  database:
+    tools:
+      query:
+        action: allow
+        sql_operations: ["SELECT", "EXPLAIN", "PRAGMA"]

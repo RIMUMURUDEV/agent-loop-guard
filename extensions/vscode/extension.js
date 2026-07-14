@@ -29,7 +29,17 @@ function activate(context) {
     vscode.commands.registerCommand("agentLoopGuard.copyAnthropicBaseUrl", () =>
       copyAnthropicBaseUrl()
     ),
-    vscode.commands.registerCommand("agentLoopGuard.copyAgentEnv", () => copyAgentEnv())
+    vscode.commands.registerCommand("agentLoopGuard.copyAgentEnv", () => copyAgentEnv()),
+    vscode.commands.registerCommand("agentLoopGuard.installRuntime", () => installRuntime()),
+    vscode.commands.registerCommand("agentLoopGuard.setupWorkspace", () => setupWorkspace()),
+    vscode.window.registerWebviewViewProvider(
+      "agentLoopGuard.guardView",
+      new DashboardViewProvider(() => readConfig().baseUrl, "Guard")
+    ),
+    vscode.window.registerWebviewViewProvider(
+      "agentLoopGuard.replayView",
+      new DashboardViewProvider(() => `${readConfig().baseUrl}/replay`, "Replay")
+    )
   );
 
   healthTimer = setInterval(() => {
@@ -39,10 +49,97 @@ function activate(context) {
     dispose: () => clearInterval(healthTimer)
   });
 
+  void ensureRuntime({ silent: true });
   void updateStatusBar();
 
   if (readConfig().autoStart) {
     void startGuard({ silent: true });
+  }
+}
+
+class DashboardViewProvider {
+  constructor(url, title) {
+    this.url = url;
+    this.title = title;
+  }
+
+  resolveWebviewView(view) {
+    view.webview.options = { enableScripts: true };
+    view.webview.html = dashboardHtml(this.url(), this.title);
+  }
+}
+
+async function commandExists(command) {
+  return new Promise((resolve) => {
+    const probe = process.platform === "win32" ? "where" : "which";
+    execFile(probe, [command], { windowsHide: true }, (error) => resolve(!error));
+  });
+}
+
+async function ensureRuntime(options = {}) {
+  const config = readConfig();
+  if (config.startMode === "source" || (await commandExists(config.cliCommand))) {
+    return true;
+  }
+  if (options.silent) {
+    statusBar.text = "$(warning) ALG missing";
+    statusBar.tooltip = "Agent Loop Guard runtime is not installed";
+    return false;
+  }
+  const choice = await vscode.window.showWarningMessage(
+    "Agent Loop Guard runtime was not found.",
+    "Install Runtime",
+    "Open Instructions"
+  );
+  if (choice === "Install Runtime") {
+    await installRuntime();
+  } else if (choice === "Open Instructions") {
+    await vscode.env.openExternal(vscode.Uri.parse("https://github.com/RIMUMURUDEV/agent-loop-guard#quick-start"));
+  }
+  return false;
+}
+
+async function installRuntime() {
+  const method = await vscode.window.showQuickPick(
+    [
+      { label: "pipx", description: "Recommended isolated installation", command: "pipx install agent-loop-guard-runtime" },
+      { label: "uv tool", description: "Install with uv", command: "uv tool install agent-loop-guard-runtime" },
+      { label: "pip", description: "Install into the active Python environment", command: "python -m pip install agent-loop-guard-runtime" }
+    ],
+    { placeHolder: "Choose how to install the local runtime" }
+  );
+  if (!method) {
+    return;
+  }
+  const terminal = vscode.window.createTerminal({ name: "Agent Loop Guard Setup" });
+  terminal.show();
+  terminal.sendText(method.command, true);
+}
+
+async function setupWorkspace() {
+  if (!(await ensureRuntime())) {
+    return;
+  }
+  const root = firstWorkspaceFolder();
+  if (!root) {
+    void vscode.window.showErrorMessage("Open a workspace before running Agent Loop Guard setup.");
+    return;
+  }
+  const config = readConfig();
+  const source = resolvePath(config.sourcePath) || root;
+  const terminal = vscode.window.createTerminal({
+    name: "Agent Loop Guard Setup",
+    cwd: config.startMode === "source" ? source : root
+  });
+  terminal.show();
+  if (config.startMode === "source") {
+    terminal.sendText(
+      `${quoteForShell(config.pythonPath)} -m app.cli setup --path ${quoteForShell(root)}`,
+      true
+    );
+    outputChannel.appendLine(`[setup:source] ${source}`);
+  } else {
+    terminal.sendText(`${config.cliCommand} setup --path ${quoteForShell(root)}`, true);
   }
 }
 
@@ -137,6 +234,9 @@ function buildLaunchConfig() {
 }
 
 async function startGuard(options = {}) {
+  if (!(await ensureRuntime(options))) {
+    return;
+  }
   const config = readConfig();
   const existingHealth = await fetchHealth(config);
   if (existingHealth.ok) {
@@ -464,7 +564,7 @@ function killProcessTree(childProcess) {
   childProcess.kill("SIGTERM");
 }
 
-function dashboardHtml(url) {
+function dashboardHtml(url, title = "Agent Loop Guard") {
   const escapedUrl = escapeHtml(url);
   const origin = escapeHtml(new URL(url).origin);
   return `<!doctype html>
@@ -486,12 +586,16 @@ function dashboardHtml(url) {
       background: #0f172a;
     }
   </style>
-  <title>Agent Loop Guard</title>
+  <title>${escapeHtml(title)}</title>
 </head>
 <body>
   <iframe title="Agent Loop Guard Dashboard" src="${escapedUrl}"></iframe>
 </body>
 </html>`;
+}
+
+function quoteForShell(value) {
+  return `"${String(value).replace(/"/g, '\\"')}"`;
 }
 
 function formatCommand(command, args) {

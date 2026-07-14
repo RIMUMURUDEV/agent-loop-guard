@@ -7,7 +7,13 @@
     <p class="muted">Task {{ run.task_id or "unknown" }} / {{ run.agent_name or "unknown agent" }}</p>
   </div>
   <div class="actions">
-    <a class="button secondary" href="/api/v1/runs/{{ run.id }}/export">Export JSON</a>
+    <form method="post" action="/replay/{{ run.id }}/pin">
+      <input type="hidden" name="pinned" value="{{ 'false' if run.pinned else 'true' }}">
+      <button class="secondary" type="submit">{{ 'Unpin' if run.pinned else 'Pin' }}</button>
+    </form>
+    <a class="button secondary" href="/api/v1/runs/{{ run.id }}/export?format=json">JSON</a>
+    <a class="button secondary" href="/api/v1/runs/{{ run.id }}/export?format=jsonl">JSONL</a>
+    <a class="button secondary" href="/api/v1/runs/{{ run.id }}/export?format=otel">OTel</a>
     {% if run.source_session_id %}
       <a class="button secondary" href="/sessions/{{ run.source_session_id }}">Source Session</a>
     {% endif %}
@@ -20,6 +26,7 @@
   <div class="metric"><span>Tokens</span><strong>{{ run.total_tokens }}</strong></div>
   <div class="metric"><span>Spans</span><strong>{{ run.span_count }}</strong></div>
   <div class="metric"><span>Events</span><strong>{{ run.event_count }}</strong></div>
+  <div class="metric"><span>Cost</span><strong>{{ '%.4f'|format(run.total_cost_micros / 1000000) }}</strong></div>
 </section>
 
 <section class="panel">
@@ -38,6 +45,17 @@
 
 <section class="panel">
   <h2>Timeline</h2>
+  <div class="timeline" aria-label="Trace timeline">
+  {% for span in spans %}
+    <div class="timeline-row" style="--depth: {{ span.depth }}">
+      <code>{{ span.name }}</code>
+      <div class="timeline-track">
+        <span class="timeline-bar status-{{ span.status }}" style="left: {{ span.offset_pct }}%; width: {{ span.width_pct }}%" title="{{ span.name }}: {{ span.duration_ms }} ms"></span>
+      </div>
+      <span>{{ span.duration_ms }} ms</span>
+    </div>
+  {% endfor %}
+  </div>
   <table>
     <thead>
       <tr>

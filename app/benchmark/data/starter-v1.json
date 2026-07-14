@@ -1,0 +1,38 @@
+{
+  "version": "starter-v1",
+  "description": "Thirty deterministic tasks for local regression smoke tests.",
+  "tasks": [
+    {"id":"easy-01","difficulty":"easy","prompt":"Return exactly: alpha","expected":"alpha","scorer":"exact","tags":["format"]},
+    {"id":"easy-02","difficulty":"easy","prompt":"Return exactly: beta","expected":"beta","scorer":"exact","tags":["format"]},
+    {"id":"easy-03","difficulty":"easy","prompt":"What is 2 + 2? Return only the number.","expected":"4","scorer":"exact","tags":["math"]},
+    {"id":"easy-04","difficulty":"easy","prompt":"Return the lowercase form of HELLO.","expected":"hello","scorer":"exact","tags":["text"]},
+    {"id":"easy-05","difficulty":"easy","prompt":"Name the boolean opposite of true.","expected":"false","scorer":"contains","tags":["logic"]},
+    {"id":"easy-06","difficulty":"easy","prompt":"Return JSON with ok=true.","expected":{"ok":true},"scorer":"json_equal","tags":["json"]},
+    {"id":"easy-07","difficulty":"easy","prompt":"What extension is commonly used for Python files?","expected":".py","scorer":"contains","tags":["coding"]},
+    {"id":"easy-08","difficulty":"easy","prompt":"Return exactly three.","expected":"three","scorer":"exact","tags":["format"]},
+    {"id":"easy-09","difficulty":"easy","prompt":"Return the first letter of agent.","expected":"a","scorer":"exact","tags":["text"]},
+    {"id":"easy-10","difficulty":"easy","prompt":"Return JSON null.","expected":null,"scorer":"json_equal","tags":["json"]},
+
+    {"id":"medium-01","difficulty":"medium","prompt":"Return the sorted numbers 3,1,2 joined by commas.","expected":"1,2,3","scorer":"exact","tags":["reasoning"]},
+    {"id":"medium-02","difficulty":"medium","prompt":"Return the SHA abbreviation as lowercase text.","expected":"sha","scorer":"exact","tags":["coding"]},
+    {"id":"medium-03","difficulty":"medium","prompt":"Return JSON array containing 1, 2, 3.","expected":[1,2,3],"scorer":"json_equal","tags":["json"]},
+    {"id":"medium-04","difficulty":"medium","prompt":"A command exits with code zero. Include the word success.","expected":"success","scorer":"contains","tags":["shell"]},
+    {"id":"medium-05","difficulty":"medium","prompt":"Return 5 factorial as digits only.","expected":"120","scorer":"exact","tags":["math"]},
+    {"id":"medium-06","difficulty":"medium","prompt":"Return the normalized path a/c for input a/b/../c.","expected":"a/c","scorer":"exact","tags":["filesystem"]},
+    {"id":"medium-07","difficulty":"medium","prompt":"Return JSON with count 3 and valid true.","expected":{"count":3,"valid":true},"scorer":"json_equal","tags":["json"]},
+    {"id":"medium-08","difficulty":"medium","prompt":"Which HTTP status means not found? Return digits.","expected":"404","scorer":"exact","tags":["http"]},
+    {"id":"medium-09","difficulty":"medium","prompt":"Include the term least privilege in the answer.","expected":"least privilege","scorer":"contains","tags":["security"]},
+    {"id":"medium-10","difficulty":"medium","prompt":"Return the result of 0b1010 in decimal.","expected":"10","scorer":"exact","tags":["math"]},
+
+    {"id":"hard-01","difficulty":"hard","prompt":"Return JSON describing a denied delete: action deny, tool delete_file.","expected":{"action":"deny","tool":"delete_file"},"scorer":"json_equal","tags":["policy"]},
+    {"id":"hard-02","difficulty":"hard","prompt":"Return the stable topological order A,B,C for edges A->B and B->C.","expected":"A,B,C","scorer":"exact","tags":["reasoning"]},
+    {"id":"hard-03","difficulty":"hard","prompt":"A paired test lacks enough samples. Include inconclusive.","expected":"inconclusive","scorer":"contains","tags":["statistics"]},
+    {"id":"hard-04","difficulty":"hard","prompt":"Return JSON with protocol jsonrpc and version 2.0.","expected":{"protocol":"jsonrpc","version":"2.0"},"scorer":"json_equal","tags":["mcp"]},
+    {"id":"hard-05","difficulty":"hard","prompt":"Return the hexadecimal SHA-256 digest length in characters.","expected":"64","scorer":"exact","tags":["security"]},
+    {"id":"hard-06","difficulty":"hard","prompt":"A sandbox has no network. Include offline and blocked.","expected":"offline","scorer":"contains","tags":["sandbox"]},
+    {"id":"hard-07","difficulty":"hard","prompt":"Return JSON with ci_low -0.2 and ci_high -0.1.","expected":{"ci_high":-0.1,"ci_low":-0.2},"scorer":"json_equal","tags":["statistics"]},
+    {"id":"hard-08","difficulty":"hard","prompt":"Return the SQL operation that reads rows.","expected":"SELECT","scorer":"exact","tags":["database"]},
+    {"id":"hard-09","difficulty":"hard","prompt":"Include both rate and limit in a two-word phrase.","expected":"rate limit","scorer":"contains","tags":["resilience"]},
+    {"id":"hard-10","difficulty":"hard","prompt":"Return JSON indicating passed true and score 1.","expected":{"passed":true,"score":1},"scorer":"json_equal","tags":["benchmark"]}
+  ]
+}

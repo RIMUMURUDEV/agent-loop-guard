@@ -2,15 +2,15 @@
   "name": "agent-loop-guard-vscode",
   "displayName": "Agent Loop Guard",
   "description": "Start and monitor the local Agent Loop Guard gateway from VS Code.",
-  "version": "0.1.0",
-  "publisher": "agent-loop-guard",
+  "version": "0.2.0",
+  "publisher": "RIMUMURUDEV",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/RIMUMURUDEV/agent-loop-guard.git",
     "directory": "extensions/vscode"
   },
-  "private": true,
+  "private": false,
   "engines": {
     "vscode": "^1.92.0"
   },
@@ -27,7 +27,11 @@
     "onCommand:agentLoopGuard.showStatus",
     "onCommand:agentLoopGuard.copyOpenAIBaseUrl",
     "onCommand:agentLoopGuard.copyAnthropicBaseUrl",
-    "onCommand:agentLoopGuard.copyAgentEnv"
+    "onCommand:agentLoopGuard.copyAgentEnv",
+    "onCommand:agentLoopGuard.installRuntime",
+    "onCommand:agentLoopGuard.setupWorkspace",
+    "onView:agentLoopGuard.guardView",
+    "onView:agentLoopGuard.replayView"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -76,8 +80,41 @@
         "command": "agentLoopGuard.copyAgentEnv",
         "title": "Copy Agent Environment",
         "category": "Agent Loop Guard"
+      },
+      {
+        "command": "agentLoopGuard.installRuntime",
+        "title": "Install Runtime",
+        "category": "Agent Loop Guard"
+      },
+      {
+        "command": "agentLoopGuard.setupWorkspace",
+        "title": "Setup Current Workspace",
+        "category": "Agent Loop Guard"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "agentLoopGuard",
+          "title": "Agent Loop Guard",
+          "icon": "media/shield.svg"
+        }
+      ]
+    },
+    "views": {
+      "agentLoopGuard": [
+        {
+          "type": "webview",
+          "id": "agentLoopGuard.guardView",
+          "name": "Guard"
+        },
+        {
+          "type": "webview",
+          "id": "agentLoopGuard.replayView",
+          "name": "Replay"
+        }
+      ]
+    },
     "configuration": {
       "title": "Agent Loop Guard",
       "properties": {

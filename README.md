@@ -1,17 +1,40 @@
 # Agent Loop Guard
 
-Agent Loop Guard is a local runtime guard for coding agents. It sits between an agent and an LLM provider, proxies OpenAI-compatible or Anthropic Messages traffic, records minimal telemetry, and flags or blocks obvious loops.
+Agent Loop Guard is an Apache-2.0 local safety and observability toolkit for coding agents. It combines a loop guard, MCP permission firewall, session replay, deterministic benchmark lab, and a Docker-backed sandbox technical preview.
 
 The default setup uses a local mock provider, so the demo works without an external API key.
 
-## Quick Start
+## Install
+
+Install the alpha release from PyPI. The distribution is named `agent-loop-guard-runtime`; the command remains `alg`:
+
+```bash
+pipx install agent-loop-guard-runtime==0.6.0a1
+# or
+uv tool install agent-loop-guard-runtime==0.6.0a1
+```
+
+Run once without a permanent installation:
+
+```bash
+uvx --from agent-loop-guard-runtime==0.6.0a1 alg doctor
+```
+
+To install the current GitHub revision instead:
+
+```bash
+pipx install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
+```
+
+For development from this checkout:
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
 pip install -e ".[dev]"
-alg init
-alg run
+alg setup
+alg doctor
+alg guard run
 ```
 
 Open `http://127.0.0.1:8787`, then run Demo Lab or:
@@ -51,9 +74,30 @@ HEAD /
 
 Use `Authorization: Bearer alg_demo_key` or `x-api-key: alg_demo_key`.
 
+`alg setup` creates a local YAML configuration and connection profiles for Codex, Claude Code, Cline, and OpenCode under `.agent-loop-guard/profiles`. Open `http://127.0.0.1:8787`, then run Demo Lab or `alg demo exact-loop`.
+
+## Modules
+
+```text
+alg setup | doctor | status | open
+alg guard run
+alg mcp run | serve | validate-policy | test-server
+alg replay import | export
+alg bench dataset validate | run | compare | regression-check
+alg sandbox create | exec | diff | apply | discard | export
+```
+
+- **Guard** detects exact request, tool, error, and sequence loops with Shadow and Enforce modes.
+- **MCP Firewall** proxies stdio and Streamable HTTP, validates schemas, filters discovery, and applies YAML policies.
+- **Replay** stores redacted traces, spans, events, costs, deterministic failure tags, and JSONL/OpenTelemetry exports.
+- **Benchmark Lab** runs the bundled 30-task dataset through mock, HTTP, or CLI adapters and computes paired bootstrap confidence intervals.
+- **Sandbox Preview** runs a copied workspace in a resource-limited Docker container and applies no changes before explicit approval.
+
+See the [documentation home](docs/index.md), [Architecture](docs/architecture.md), [Threat Model](docs/security.md), [Benchmark Guide](docs/guides/benchmark.md), and [Sandbox Guide](docs/guides/sandbox.md). A [Russian overview](docs/ru/index.md) is also available.
+
 ## Guard Behavior
 
-The MVP implements:
+The guard implements:
 
 - exact repeated request detection
 - repeated tool call detection
@@ -67,6 +111,17 @@ The MVP implements:
 - trace runs, spans, events, replay UI, JSON export, and run comparison
 
 Shadow Mode flags suspicious requests without blocking. Enforce Mode blocks requests when a blocking rule triggers.
+
+## MCP Firewall
+
+Validate and run a stdio policy proxy:
+
+```bash
+alg mcp validate-policy app/mcp/presets/filesystem.yml
+alg mcp run --policy app/mcp/presets/filesystem.yml -- your-mcp-server
+```
+
+For Streamable HTTP, configure a server under `mcp.servers`, run `alg mcp serve`, and connect to `/mcp/{server_id}`. Approval requests appear at `/mcp`. Raw arguments and secrets are redacted; audit records store hashes and policy metadata.
 
 ## Session Replay
 
@@ -86,9 +141,49 @@ POST /api/v1/spans
 POST /api/v1/events/batch
 GET  /api/v1/runs
 GET  /api/v1/runs/{trace_id}
-GET  /api/v1/runs/{trace_id}/export
+GET  /api/v1/runs/{trace_id}/export?format=json|jsonl|otel
+POST /api/v1/runs/import
+POST /api/v1/runs/{trace_id}/pin
 POST /api/v1/compare
 ```
+
+CLI transfer:
+
+```bash
+alg replay export TRACE_ID --format jsonl --output trace.jsonl
+alg replay import trace.jsonl
+```
+
+## Benchmark Lab
+
+```bash
+alg bench dataset validate
+alg bench run --adapter mock --candidate baseline --output baseline.jsonl
+alg bench run --adapter mock --variant regressed --candidate candidate --output candidate.jsonl
+alg bench regression-check baseline.jsonl candidate.jsonl
+```
+
+Parquet, DuckDB, and MLflow are optional:
+
+```bash
+pip install "agent-loop-guard-runtime[bench]"
+```
+
+The regression command exits `0` for no regression, `1` for a statistically supported regression, and `2` when the result is inconclusive.
+
+## Sandbox Preview
+
+Docker must be installed and running first. The original project is not mounted into the container; the sandbox uses a private copy.
+
+```bash
+alg sandbox create .
+alg sandbox exec SANDBOX_ID -- pytest -q
+alg sandbox diff SANDBOX_ID
+alg sandbox apply SANDBOX_ID --path app/example.py
+alg sandbox discard SANDBOX_ID
+```
+
+Network is disabled by default. This is a defense-in-depth development tool, not a certified security boundary; read [the threat model](docs/security.md) before using it with untrusted code.
 
 Minimal trace ingest example:
 
@@ -153,10 +248,10 @@ Model ID: demo-model
 
 An experimental VS Code wrapper lives in `extensions/vscode`. It starts the local guard daemon, shows health in the status bar, opens the dashboard and replay views in VS Code WebViews, and copies agent connection settings.
 
-Install the Python runtime first:
+Install the Python runtime first, then use `Agent Loop Guard: Setup Current Workspace`:
 
 ```bash
-pip install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
+pipx install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
 ```
 
 Run the extension from source:
@@ -173,7 +268,7 @@ Package and install a local `.vsix`:
 ```bash
 cd extensions/vscode
 npm run package
-code --install-extension agent-loop-guard-vscode-0.1.0.vsix
+code --install-extension agent-loop-guard-vscode-0.2.0.vsix
 ```
 
 If `alg` is installed globally, keep `agentLoopGuard.startMode` as `cli`. To run from this checkout instead, set:
@@ -226,10 +321,19 @@ Environment overrides include:
 ## Development
 
 ```bash
-pip install -e ".[dev]"
+pip install -e ".[dev,docs]"
 pytest -q
 ruff check .
+mkdocs build --strict
 ```
+
+Run the documentation site locally:
+
+```bash
+mkdocs serve
+```
+
+The full contributor workflow is in [CONTRIBUTING.md](CONTRIBUTING.md). Security assumptions and private reporting guidance are in [SECURITY.md](SECURITY.md).
 
 Docker:
 
@@ -237,6 +341,12 @@ Docker:
 docker compose up --build
 ```
 
+## Project Status
+
+This repository is developed as an educational open-source project. Guard, MCP, Replay, and Benchmark are locally testable. Sandbox is a technical preview and its real Docker smoke-test runs only on Linux CI; it could not be executed on the current Windows machine because Docker is not installed. PyPI and VS Code Marketplace publication require the repository owner to configure the corresponding publisher accounts.
+
+There is no telemetry, paid cloud, subscription, SLA, or closed feature set. Optional donations may be added later, but they do not influence architecture or priorities.
+
 ## Limits
 
-This is a local pet-project MVP. It only sees traffic routed through its base URL. It does not provide enterprise IAM, distributed leases, legal audit guarantees, or semantic loop detection. Full Content Logging is off by default and should not be enabled for sensitive data unless the data owner understands the risk.
+The toolkit only sees traffic routed through it. It does not provide enterprise IAM, distributed leases, legal audit guarantees, a kernel-level isolation guarantee, or hidden chain-of-thought capture. Full Content Logging is off by default and should not be enabled for sensitive data unless the data owner understands the risk.

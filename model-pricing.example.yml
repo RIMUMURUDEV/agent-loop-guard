@@ -1,0 +1,6 @@
+# Prices are intentionally user-managed because provider prices change.
+# Values are micro-units of your billing currency per one million tokens.
+models:
+  demo-model:
+    input_micros_per_million: 0
+    output_micros_per_million: 0

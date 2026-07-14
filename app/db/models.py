@@ -219,3 +219,78 @@ class TraceArtifact(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     run: Mapped[TraceRun] = relationship(back_populates="artifacts")
+
+
+class MCPServer(Base):
+    __tablename__ = "mcp_servers"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    transport: Mapped[str] = mapped_column(String(32), nullable=False, default="stdio")
+    target: Mapped[str] = mapped_column(String(500), nullable=False)
+    fingerprint: Mapped[str] = mapped_column(String(96), nullable=False, index=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class MCPSession(Base):
+    __tablename__ = "mcp_sessions"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    server_id: Mapped[str] = mapped_column(ForeignKey("mcp_servers.id"), nullable=False, index=True)
+    client_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    protocol_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    mode: Mapped[str] = mapped_column(String(32), nullable=False, default="enforce")
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class MCPToolSnapshot(Base):
+    __tablename__ = "mcp_tool_snapshots"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("mcp_sessions.id"), nullable=False, index=True)
+    server_id: Mapped[str] = mapped_column(ForeignKey("mcp_servers.id"), nullable=False, index=True)
+    tool_name: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
+    schema_hash: Mapped[str] = mapped_column(String(96), nullable=False)
+    schema_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    risk_tags_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class MCPDecisionEvent(Base):
+    __tablename__ = "mcp_decision_events"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    session_id: Mapped[str | None] = mapped_column(
+        ForeignKey("mcp_sessions.id"), nullable=True, index=True
+    )
+    server_id: Mapped[str] = mapped_column(ForeignKey("mcp_servers.id"), nullable=False, index=True)
+    trace_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    request_id: Mapped[str | None] = mapped_column(String(160), nullable=True, index=True)
+    tool_name: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
+    argument_hash: Mapped[str] = mapped_column(String(96), nullable=False, index=True)
+    policy_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    action: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    reason: Mapped[str] = mapped_column(String(300), nullable=False)
+    rule_id: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    mode: Mapped[str] = mapped_column(String(32), nullable=False, default="enforce")
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    result_status: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    attributes_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class MCPApproval(Base):
+    __tablename__ = "mcp_approvals"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    decision_event_id: Mapped[str] = mapped_column(
+        ForeignKey("mcp_decision_events.id"), nullable=False, index=True
+    )
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending", index=True)
+    scope: Mapped[str] = mapped_column(String(32), nullable=False, default="once")
+    argument_hash: Mapped[str] = mapped_column(String(96), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

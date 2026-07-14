@@ -4,10 +4,10 @@ This extension is a lightweight VS Code wrapper around the Agent Loop Guard loca
 
 ## Requirements
 
-Install the Python runtime first:
+Install the Python runtime first, or run `Agent Loop Guard: Install Runtime` and choose pipx, uv, or pip:
 
 ```bash
-pip install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
+pipx install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
 ```
 
 Or use a local checkout:
@@ -46,7 +46,7 @@ If you want to run from the checkout instead, set:
 cd extensions/vscode
 npm run check
 npm run package
-code --install-extension agent-loop-guard-vscode-0.1.0.vsix
+code --install-extension agent-loop-guard-vscode-0.2.0.vsix
 ```
 
 `npm run package` uses `npx @vscode/vsce`, so no committed build output is required.
@@ -81,6 +81,8 @@ API Key: alg_demo_key
 
 The extension can copy both base URLs and a small environment snippet from the command palette.
 
+The Agent Loop Guard Activity Bar contains embedded Guard and Replay views. Run `Agent Loop Guard: Setup Current Workspace` to generate the YAML config and Codex, Claude Code, Cline, and OpenCode connection profiles.
+
 ## Settings
 
 Important settings:
@@ -95,5 +97,7 @@ Important settings:
 - `agentLoopGuard.port`
 - `agentLoopGuard.gatewayKey`
 - `agentLoopGuard.environment`
+
+The runtime remains a separate Python process. The extension detects `alg`, offers installation when it is missing, and never downloads or executes an installer without a command selected by the user.
 
 The extension only stops guard processes it started itself. If the daemon is already running from another terminal, the Stop command leaves it alone.
