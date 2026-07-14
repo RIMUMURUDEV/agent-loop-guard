@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Agent Loop Guard{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/">Agent Loop Guard</a>
+    <nav>
+      <a href="/">Dashboard</a>
+      <a href="/sessions">Sessions</a>
+      <a href="/demo">Demo Lab</a>
+      <a href="/policies">Policies</a>
+      <a href="/agents">Agents</a>
+      <a href="/settings">Settings</a>
+    </nav>
+  </aside>
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
+

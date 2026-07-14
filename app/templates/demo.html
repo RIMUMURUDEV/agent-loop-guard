@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Demo Lab · Agent Loop Guard{% endblock %}
+{% block content %}
+<header class="page-head"><h1>Demo Lab</h1></header>
+<section class="panel demo-grid">
+  {% for scenario in ["normal", "exact-loop", "tool-loop", "error-retry", "streaming"] %}
+  <form action="/demo/run" method="post">
+    <input type="hidden" name="scenario" value="{{ scenario }}">
+    <label>{{ scenario }}</label>
+    <select name="mode">
+      <option value="shadow">shadow</option>
+      <option value="enforce">enforce</option>
+    </select>
+    <button type="submit">Run</button>
+  </form>
+  {% endfor %}
+</section>
+<section class="panel">
+  <h2>Recent Demo Sessions</h2>
+  <table>
+    <thead><tr><th>ID</th><th>Status</th><th>Requests</th><th>Flags</th><th>Blocks</th></tr></thead>
+    <tbody>
+    {% for session in sessions %}
+      <tr>
+        <td><a href="/sessions/{{ session.id }}">{{ session.id }}</a></td>
+        <td>{{ session.status }}</td>
+        <td>{{ session.request_count }}</td>
+        <td>{{ session.flagged_count }}</td>
+        <td>{{ session.blocked_count }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
+

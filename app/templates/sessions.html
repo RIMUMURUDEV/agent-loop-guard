@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Sessions · Agent Loop Guard{% endblock %}
+{% block content %}
+<header class="page-head"><h1>Sessions</h1></header>
+<section class="panel">
+  <table>
+    <thead><tr><th>ID</th><th>Name</th><th>Status</th><th>Agent</th><th>Requests</th><th>Reason</th><th>Updated</th></tr></thead>
+    <tbody>
+    {% for session in sessions %}
+      <tr>
+        <td><a href="/sessions/{{ session.id }}">{{ session.id }}</a></td>
+        <td>{{ session.name or "" }}</td>
+        <td><span class="status status-{{ session.status }}">{{ session.status }}</span></td>
+        <td>{{ session.agent_id }}</td>
+        <td>{{ session.request_count }}</td>
+        <td>{% if session.blocked_count %}blocked{% elif session.flagged_count %}flagged{% else %}allow{% endif %}</td>
+        <td>{{ session.updated_at }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
+

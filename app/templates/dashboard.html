@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Agent Loop Guard{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Dashboard</h1>
+  <form action="/demo/run" method="post">
+    <input type="hidden" name="scenario" value="exact-loop">
+    <input type="hidden" name="mode" value="shadow">
+    <button type="submit">Run Demo</button>
+  </form>
+</header>
+
+<section class="metric-grid">
+  <div class="metric"><span>Sessions</span><strong>{{ stats.sessions }}</strong></div>
+  <div class="metric"><span>Requests</span><strong>{{ stats.requests }}</strong></div>
+  <div class="metric"><span>Flags</span><strong>{{ stats.flags }}</strong></div>
+  <div class="metric"><span>Blocks</span><strong>{{ stats.blocks }}</strong></div>
+  <div class="metric"><span>Tokens</span><strong>{{ stats.tokens }}</strong></div>
+</section>
+
+<section class="panel">
+  <h2>Recent Sessions</h2>
+  <table>
+    <thead><tr><th>ID</th><th>Status</th><th>Requests</th><th>Flags</th><th>Blocks</th><th>Tokens</th></tr></thead>
+    <tbody>
+    {% for session in sessions %}
+      <tr>
+        <td><a href="/sessions/{{ session.id }}">{{ session.id }}</a></td>
+        <td><span class="status status-{{ session.status }}">{{ session.status }}</span></td>
+        <td>{{ session.request_count }}</td>
+        <td>{{ session.flagged_count }}</td>
+        <td>{{ session.blocked_count }}</td>
+        <td>{{ session.total_tokens }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
+

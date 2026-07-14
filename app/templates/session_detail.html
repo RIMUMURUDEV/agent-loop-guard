@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Session {{ session.id }} · Agent Loop Guard{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>{{ session.name or session.id }}</h1>
+    <p class="muted">{{ session.project_id }} · {{ session.agent_id }} · {{ session.status }}</p>
+  </div>
+  <div class="actions">
+    <form action="/sessions/{{ session.id }}/pause" method="post"><button type="submit">Stop</button></form>
+    <form action="/sessions/{{ session.id }}/resume" method="post"><button type="submit">Resume</button></form>
+    <a class="button secondary" href="/api/export/sessions/{{ session.id }}.json">Export JSON</a>
+  </div>
+</header>
+
+<section class="metric-grid">
+  <div class="metric"><span>Requests</span><strong>{{ session.request_count }}</strong></div>
+  <div class="metric"><span>Input</span><strong>{{ session.input_tokens }}</strong></div>
+  <div class="metric"><span>Output</span><strong>{{ session.output_tokens }}</strong></div>
+  <div class="metric"><span>Flags</span><strong>{{ session.flagged_count }}</strong></div>
+  <div class="metric"><span>Blocks</span><strong>{{ session.blocked_count }}</strong></div>
+</section>
+
+<section class="panel">
+  <h2>Session Notes</h2>
+  <form class="inline-form" action="/sessions/{{ session.id }}/edit" method="post">
+    <input name="name" value="{{ session.name or '' }}" placeholder="Name">
+    <input name="note" value="{{ session.note or '' }}" placeholder="Note">
+    <button type="submit">Save</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Timeline</h2>
+  <table>
+    <thead><tr><th>Time</th><th>Type</th><th>Severity</th><th>Reason</th><th>Details</th></tr></thead>
+    <tbody>
+    {% for event in events %}
+      <tr>
+        <td>{{ event.created_at }}</td>
+        <td>{{ event.type }}</td>
+        <td>{{ event.severity }}</td>
+        <td><code>{{ event.reason_code or "" }}</code></td>
+        <td><code>{{ event.details }}</code></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Requests</h2>
+  <table>
+    <thead><tr><th>Time</th><th>Endpoint</th><th>Status</th><th>Decision</th><th>Reason</th><th>Tokens</th><th>Latency</th></tr></thead>
+    <tbody>
+    {% for item in requests %}
+      <tr>
+        <td>{{ item.created_at }}</td>
+        <td>{{ item.endpoint }}</td>
+        <td>{{ item.status }}</td>
+        <td>{{ item.decision }}</td>
+        <td><code>{{ item.reason_code or "" }}</code></td>
+        <td>{{ item.total_tokens }}</td>
+        <td>{{ item.latency_ms }} ms</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
+

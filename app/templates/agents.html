@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Agents · Agent Loop Guard{% endblock %}
+{% block content %}
+<header class="page-head"><h1>Agents</h1></header>
+{% if created_key %}
+<section class="notice">
+  <strong>{{ created_agent.name }}</strong>
+  <code>{{ created_key }}</code>
+</section>
+{% endif %}
+<section class="panel">
+  <h2>Create Agent Key</h2>
+  <form class="inline-form" action="/agents" method="post">
+    <input name="name" placeholder="Name" required>
+    <input name="project_id" value="default">
+    <select name="protocol">
+      <option value="openai">openai</option>
+      <option value="anthropic">anthropic</option>
+    </select>
+    <button type="submit">Create</button>
+  </form>
+</section>
+<section class="panel">
+  <h2>Local Keys</h2>
+  <table>
+    <thead><tr><th>ID</th><th>Name</th><th>Project</th><th>Protocol</th><th>State</th><th></th></tr></thead>
+    <tbody>
+    {% for agent in agents %}
+      <tr>
+        <td><code>{{ agent.id }}</code></td>
+        <td>{{ agent.name }}</td>
+        <td>{{ agent.project_id }}</td>
+        <td>{{ agent.protocol }}</td>
+        <td>{% if agent.paused %}paused{% elif agent.enabled %}enabled{% else %}disabled{% endif %}</td>
+        <td>
+          {% if agent.paused %}
+          <form action="/agents/{{ agent.id }}/resume" method="post"><button type="submit">Resume</button></form>
+          {% else %}
+          <form action="/agents/{{ agent.id }}/pause" method="post"><button type="submit">Pause</button></form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
+

@@ -1,0 +1,12 @@
+services:
+  agent-loop-guard:
+    build: .
+    ports:
+      - "8787:8787"
+    environment:
+      ALG_HOST: 0.0.0.0
+      ALG_PROVIDER: mock
+      ALG_GATEWAY_KEY: alg_demo_key
+    volumes:
+      - ./data:/app/data
+
