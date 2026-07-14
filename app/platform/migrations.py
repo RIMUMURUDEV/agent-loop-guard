@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from alembic import command
 from alembic.config import Config
 from sqlalchemy import inspect
-
-from alembic import command
 
 
 def alembic_config(storage_url: str) -> Config:
