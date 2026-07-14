@@ -57,6 +57,7 @@ code --install-extension agent-loop-guard-vscode-0.1.0.vsix
 - `Agent Loop Guard: Stop Guard`
 - `Agent Loop Guard: Restart Guard`
 - `Agent Loop Guard: Open Dashboard`
+- `Agent Loop Guard: Open Replay`
 - `Agent Loop Guard: Show Status`
 - `Agent Loop Guard: Copy OpenAI Base URL`
 - `Agent Loop Guard: Copy Anthropic Base URL`

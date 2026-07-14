@@ -64,8 +64,39 @@ The MVP implements:
 - manual session and agent pause/resume
 - metadata-only logging by default
 - JSON session export and aggregate CSV export
+- trace runs, spans, events, replay UI, JSON export, and run comparison
 
 Shadow Mode flags suspicious requests without blocking. Enforce Mode blocks requests when a blocking rule triggers.
+
+## Session Replay
+
+Every proxied model request now creates a replay trace automatically. Open:
+
+```text
+http://127.0.0.1:8787/replay
+```
+
+The Replay view shows trace runs, model request spans, policy decision events, token totals, duration, source session links, JSON export, and a simple two-run comparison.
+
+Replay ingest API:
+
+```text
+POST /api/v1/traces
+POST /api/v1/spans
+POST /api/v1/events/batch
+GET  /api/v1/runs
+GET  /api/v1/runs/{trace_id}
+GET  /api/v1/runs/{trace_id}/export
+POST /api/v1/compare
+```
+
+Minimal trace ingest example:
+
+```bash
+curl -X POST http://127.0.0.1:8787/api/v1/traces ^
+  -H "Content-Type: application/json" ^
+  -d "{\"trace_id\":\"demo_trace\",\"task_id\":\"demo\",\"spans\":[{\"name\":\"tool.call\",\"start_ns\":1,\"end_ns\":2000000}]}"
+```
 
 ## Agent Setup
 
@@ -120,7 +151,7 @@ Model ID: demo-model
 
 ## VS Code Extension
 
-An experimental VS Code wrapper lives in `extensions/vscode`. It starts the local guard daemon, shows health in the status bar, opens the dashboard in a VS Code WebView, and copies agent connection settings.
+An experimental VS Code wrapper lives in `extensions/vscode`. It starts the local guard daemon, shows health in the status bar, opens the dashboard and replay views in VS Code WebViews, and copies agent connection settings.
 
 Install the Python runtime first:
 

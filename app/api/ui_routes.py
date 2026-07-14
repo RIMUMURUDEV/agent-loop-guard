@@ -15,6 +15,10 @@ from app.db.repository import (
     policy_dict,
     request_dict,
     session_dict,
+    trace_artifact_dict,
+    trace_event_dict,
+    trace_run_dict,
+    trace_span_dict,
 )
 from app.db.session import get_db
 
@@ -58,6 +62,61 @@ def session_page(session_id: str, request: Request, db: Session = Depends(get_db
             "session": session_dict(session),
             "requests": [request_dict(item) for item in repo.requests_for_session(session_id)],
             "events": [event_dict(item) for item in repo.events_for_session(session_id)],
+        },
+    )
+
+
+@router.get("/replay")
+def replay_page(
+    request: Request,
+    q: str | None = None,
+    project_id: str | None = None,
+    db: Session = Depends(get_db),
+):
+    repo = Repository(db)
+    return templates.TemplateResponse(
+        request,
+        "replay.html",
+        {
+            "runs": [
+                trace_run_dict(item)
+                for item in repo.list_trace_runs(limit=100, project_id=project_id, query=q)
+            ],
+            "q": q or "",
+            "project_id": project_id or "",
+        },
+    )
+
+
+@router.post("/replay/compare")
+async def replay_compare_page(request: Request, db: Session = Depends(get_db)):
+    form = await request.form()
+    left_id = str(form.get("left_trace_id") or "")
+    right_id = str(form.get("right_trace_id") or "")
+    result = Repository(db).compare_traces(left_id, right_id)
+    if result is None:
+        raise HTTPException(404, "One or both traces were not found.")
+    return templates.TemplateResponse(
+        request,
+        "replay_compare.html",
+        {"result": result, "left_id": left_id, "right_id": right_id},
+    )
+
+
+@router.get("/replay/{trace_id}")
+def replay_detail_page(trace_id: str, request: Request, db: Session = Depends(get_db)):
+    repo = Repository(db)
+    run = repo.get_trace_run(trace_id)
+    if run is None:
+        raise HTTPException(404, "Trace not found.")
+    return templates.TemplateResponse(
+        request,
+        "replay_detail.html",
+        {
+            "run": trace_run_dict(run),
+            "spans": [trace_span_dict(item) for item in repo.trace_spans(trace_id)],
+            "events": [trace_event_dict(item) for item in repo.trace_events(trace_id)],
+            "artifacts": [trace_artifact_dict(item) for item in repo.trace_artifacts(trace_id)],
         },
     )
 
@@ -179,4 +238,3 @@ async def demo_run_ui(request: Request, db: Session = Depends(get_db)):
 @router.get("/settings")
 def settings_page(request: Request):
     return templates.TemplateResponse(request, "settings.html", {"config": request.app.state.config})
-

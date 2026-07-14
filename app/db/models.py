@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -134,3 +134,88 @@ class ToolCall(Base):
 
     request: Mapped[RequestRecord] = relationship(back_populates="tool_calls")
 
+
+class TraceRun(Base):
+    __tablename__ = "trace_runs"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    source_session_id: Mapped[str | None] = mapped_column(
+        ForeignKey("sessions.id"), nullable=True, index=True
+    )
+    project_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True, default="default")
+    task_id: Mapped[str | None] = mapped_column(String(160), nullable=True, index=True)
+    task_fingerprint: Mapped[str | None] = mapped_column(String(96), nullable=True, index=True)
+    agent_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    model: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="running", index=True)
+    failure_tag: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_tokens: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_cost_micros: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    span_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    event_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    pinned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    attributes_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    spans: Mapped[list[TraceSpan]] = relationship(
+        back_populates="run", cascade="all, delete-orphan"
+    )
+    events: Mapped[list[TraceEvent]] = relationship(
+        back_populates="run", cascade="all, delete-orphan"
+    )
+    artifacts: Mapped[list[TraceArtifact]] = relationship(
+        back_populates="run", cascade="all, delete-orphan"
+    )
+
+
+class TraceSpan(Base):
+    __tablename__ = "trace_spans"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    trace_id: Mapped[str] = mapped_column(ForeignKey("trace_runs.id"), nullable=False, index=True)
+    parent_span_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="ok", index=True)
+    start_ns: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    end_ns: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    attributes_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+
+    run: Mapped[TraceRun] = relationship(back_populates="spans")
+    events: Mapped[list[TraceEvent]] = relationship(
+        back_populates="span", cascade="all, delete-orphan"
+    )
+
+
+class TraceEvent(Base):
+    __tablename__ = "trace_events"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    trace_id: Mapped[str] = mapped_column(ForeignKey("trace_runs.id"), nullable=False, index=True)
+    span_id: Mapped[str | None] = mapped_column(ForeignKey("trace_spans.id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    severity: Mapped[str] = mapped_column(String(32), nullable=False, default="info")
+    timestamp_ns: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    attributes_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+
+    run: Mapped[TraceRun] = relationship(back_populates="events")
+    span: Mapped[TraceSpan | None] = relationship(back_populates="events")
+
+
+class TraceArtifact(Base):
+    __tablename__ = "trace_artifacts"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    trace_id: Mapped[str] = mapped_column(ForeignKey("trace_runs.id"), nullable=False, index=True)
+    path: Mapped[str] = mapped_column(String(500), nullable=False)
+    mime_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    size: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    sha256: Mapped[str | None] = mapped_column(String(96), nullable=True, index=True)
+    attributes_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    run: Mapped[TraceRun] = relationship(back_populates="artifacts")

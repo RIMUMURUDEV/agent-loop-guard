@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Replay - Agent Loop Guard{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Replay</h1>
+  <a class="button secondary" href="/api/v1/runs">Open API</a>
+</header>
+
+<section class="panel">
+  <form class="inline-form" action="/replay" method="get">
+    <input name="q" value="{{ q }}" placeholder="Search trace, task, agent, model, failure tag">
+    <input name="project_id" value="{{ project_id }}" placeholder="Project ID">
+    <button type="submit">Search</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Compare Runs</h2>
+  <form class="inline-form" action="/replay/compare" method="post">
+    <input name="left_trace_id" placeholder="Baseline trace id">
+    <input name="right_trace_id" placeholder="Candidate trace id">
+    <button type="submit">Compare</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Trace Runs</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Status</th>
+        <th>Task</th>
+        <th>Agent</th>
+        <th>Model</th>
+        <th>Duration</th>
+        <th>Tokens</th>
+        <th>Spans</th>
+        <th>Events</th>
+        <th>Failure</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for run in runs %}
+      <tr>
+        <td><a href="/replay/{{ run.id }}">{{ run.id }}</a></td>
+        <td><span class="status status-{{ run.status }}">{{ run.status }}</span></td>
+        <td>{{ run.task_id or "-" }}</td>
+        <td>{{ run.agent_name or "-" }}</td>
+        <td>{{ run.model or "-" }}</td>
+        <td>{{ run.duration_ms }} ms</td>
+        <td>{{ run.total_tokens }}</td>
+        <td>{{ run.span_count }}</td>
+        <td>{{ run.event_count }}</td>
+        <td>{{ run.failure_tag or "-" }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="10" class="muted">No trace runs yet. Send traffic through the proxy or POST to /api/v1/traces.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

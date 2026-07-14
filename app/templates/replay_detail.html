@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Trace {{ run.id }} - Agent Loop Guard{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Trace {{ run.id }}</h1>
+    <p class="muted">Task {{ run.task_id or "unknown" }} / {{ run.agent_name or "unknown agent" }}</p>
+  </div>
+  <div class="actions">
+    <a class="button secondary" href="/api/v1/runs/{{ run.id }}/export">Export JSON</a>
+    {% if run.source_session_id %}
+      <a class="button secondary" href="/sessions/{{ run.source_session_id }}">Source Session</a>
+    {% endif %}
+  </div>
+</header>
+
+<section class="metric-grid">
+  <div class="metric"><span>Status</span><strong>{{ run.status }}</strong></div>
+  <div class="metric"><span>Duration</span><strong>{{ run.duration_ms }} ms</strong></div>
+  <div class="metric"><span>Tokens</span><strong>{{ run.total_tokens }}</strong></div>
+  <div class="metric"><span>Spans</span><strong>{{ run.span_count }}</strong></div>
+  <div class="metric"><span>Events</span><strong>{{ run.event_count }}</strong></div>
+</section>
+
+<section class="panel">
+  <h2>Run Metadata</h2>
+  <table class="kv">
+    <tbody>
+      <tr><th>Project</th><td>{{ run.project_id }}</td></tr>
+      <tr><th>Model</th><td>{{ run.model or "-" }}</td></tr>
+      <tr><th>Failure tag</th><td>{{ run.failure_tag or "-" }}</td></tr>
+      <tr><th>Created</th><td>{{ run.created_at }}</td></tr>
+      <tr><th>Updated</th><td>{{ run.updated_at }}</td></tr>
+      <tr><th>Attributes</th><td><code>{{ run.attributes | tojson }}</code></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Timeline</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Span</th>
+        <th>Status</th>
+        <th>Duration</th>
+        <th>Parent</th>
+        <th>Start</th>
+        <th>Key Details</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for span in spans %}
+      <tr>
+        <td><code>{{ span.name }}</code><br><span class="muted">{{ span.id }}</span></td>
+        <td><span class="status status-{{ span.status }}">{{ span.status }}</span></td>
+        <td>{{ span.duration_ms }} ms</td>
+        <td>{{ span.parent_span_id or "root" }}</td>
+        <td>{{ span.start_at }}</td>
+        <td>
+          {% if span.attributes.get("request.id") %}request {{ span.attributes.get("request.id") }}{% endif %}
+          {% if span.attributes.get("http.status_code") %} / HTTP {{ span.attributes.get("http.status_code") }}{% endif %}
+          {% if span.attributes.get("policy.decision") %} / {{ span.attributes.get("policy.decision") }}{% endif %}
+          {% if span.attributes.get("policy.reason") %} / {{ span.attributes.get("policy.reason") }}{% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="muted">No spans recorded.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Events</h2>
+  <table>
+    <thead><tr><th>Time</th><th>Name</th><th>Severity</th><th>Span</th><th>Attributes</th></tr></thead>
+    <tbody>
+    {% for event in events %}
+      <tr>
+        <td>{{ event.timestamp }}</td>
+        <td><code>{{ event.name }}</code></td>
+        <td>{{ event.severity }}</td>
+        <td>{{ event.span_id or "-" }}</td>
+        <td><code>{{ event.attributes | tojson }}</code></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="muted">No events recorded.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Artifacts</h2>
+  <table>
+    <thead><tr><th>Path</th><th>MIME</th><th>Size</th><th>SHA-256</th></tr></thead>
+    <tbody>
+    {% for artifact in artifacts %}
+      <tr>
+        <td>{{ artifact.path }}</td>
+        <td>{{ artifact.mime_type or "-" }}</td>
+        <td>{{ artifact.size }}</td>
+        <td>{{ artifact.sha256 or "-" }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4" class="muted">No artifacts recorded.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

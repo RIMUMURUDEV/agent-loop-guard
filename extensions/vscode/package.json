@@ -23,6 +23,7 @@
     "onCommand:agentLoopGuard.stop",
     "onCommand:agentLoopGuard.restart",
     "onCommand:agentLoopGuard.openDashboard",
+    "onCommand:agentLoopGuard.openReplay",
     "onCommand:agentLoopGuard.showStatus",
     "onCommand:agentLoopGuard.copyOpenAIBaseUrl",
     "onCommand:agentLoopGuard.copyAnthropicBaseUrl",
@@ -49,6 +50,11 @@
       {
         "command": "agentLoopGuard.openDashboard",
         "title": "Open Dashboard",
+        "category": "Agent Loop Guard"
+      },
+      {
+        "command": "agentLoopGuard.openReplay",
+        "title": "Open Replay",
         "category": "Agent Loop Guard"
       },
       {

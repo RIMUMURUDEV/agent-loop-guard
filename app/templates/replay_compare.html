@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Trace Compare - Agent Loop Guard{% endblock %}
+{% block content %}
+<header class="page-head">
+  <h1>Trace Compare</h1>
+  <a class="button secondary" href="/replay">Back to Replay</a>
+</header>
+
+<section class="panel">
+  <h2>Runs</h2>
+  <table>
+    <thead><tr><th></th><th>ID</th><th>Status</th><th>Task</th><th>Agent</th><th>Model</th></tr></thead>
+    <tbody>
+      <tr>
+        <th>Baseline</th>
+        <td><a href="/replay/{{ result.left.id }}">{{ result.left.id }}</a></td>
+        <td>{{ result.left.status }}</td>
+        <td>{{ result.left.task_id or "-" }}</td>
+        <td>{{ result.left.agent_name or "-" }}</td>
+        <td>{{ result.left.model or "-" }}</td>
+      </tr>
+      <tr>
+        <th>Candidate</th>
+        <td><a href="/replay/{{ result.right.id }}">{{ result.right.id }}</a></td>
+        <td>{{ result.right.status }}</td>
+        <td>{{ result.right.task_id or "-" }}</td>
+        <td>{{ result.right.agent_name or "-" }}</td>
+        <td>{{ result.right.model or "-" }}</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Delta</h2>
+  <table>
+    <thead><tr><th>Metric</th><th>Candidate - Baseline</th></tr></thead>
+    <tbody>
+    {% for key, value in result.delta.items() %}
+      <tr><td>{{ key }}</td><td>{{ value }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Span Mix</h2>
+  <table>
+    <thead><tr><th>Span Name</th><th>Count Delta</th></tr></thead>
+    <tbody>
+    {% for key, value in result.span_name_delta.items() %}
+      <tr><td><code>{{ key }}</code></td><td>{{ value }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

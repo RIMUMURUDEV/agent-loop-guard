@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.admin_routes import router as admin_router
 from app.api.anthropic_routes import router as anthropic_router
 from app.api.openai_routes import router as openai_router
+from app.api.replay_routes import router as replay_router
 from app.api.ui_routes import router as ui_router
 from app.core.config import AppConfig
 from app.db.session import build_engine, build_session_factory, init_db
@@ -42,6 +43,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
     app.include_router(openai_router)
     app.include_router(anthropic_router)
     app.include_router(admin_router)
+    app.include_router(replay_router)
 
     if config.admin_ui:
         static_dir = Path(__file__).resolve().parent / "static"
@@ -52,4 +54,3 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
 
 
 app = create_app()
-

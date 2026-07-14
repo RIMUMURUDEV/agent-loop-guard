@@ -229,6 +229,18 @@ input, select {
   background: #eceff3;
 }
 
+.status-running {
+  background: #e8f2ff;
+}
+
+.status-ok {
+  background: #e7f6eb;
+}
+
+.status-error, .status-blocked {
+  background: #fde7e7;
+}
+
 .kv th {
   width: 220px;
 }
