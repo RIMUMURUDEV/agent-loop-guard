@@ -1,0 +1,158 @@
+{
+  "name": "agent-loop-guard-vscode",
+  "displayName": "Agent Loop Guard",
+  "description": "Start and monitor the local Agent Loop Guard gateway from VS Code.",
+  "version": "0.1.0",
+  "publisher": "agent-loop-guard",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RIMUMURUDEV/agent-loop-guard.git",
+    "directory": "extensions/vscode"
+  },
+  "private": true,
+  "engines": {
+    "vscode": "^1.92.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:agentLoopGuard.start",
+    "onCommand:agentLoopGuard.stop",
+    "onCommand:agentLoopGuard.restart",
+    "onCommand:agentLoopGuard.openDashboard",
+    "onCommand:agentLoopGuard.showStatus",
+    "onCommand:agentLoopGuard.copyOpenAIBaseUrl",
+    "onCommand:agentLoopGuard.copyAnthropicBaseUrl",
+    "onCommand:agentLoopGuard.copyAgentEnv"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "agentLoopGuard.start",
+        "title": "Start Guard",
+        "category": "Agent Loop Guard"
+      },
+      {
+        "command": "agentLoopGuard.stop",
+        "title": "Stop Guard",
+        "category": "Agent Loop Guard"
+      },
+      {
+        "command": "agentLoopGuard.restart",
+        "title": "Restart Guard",
+        "category": "Agent Loop Guard"
+      },
+      {
+        "command": "agentLoopGuard.openDashboard",
+        "title": "Open Dashboard",
+        "category": "Agent Loop Guard"
+      },
+      {
+        "command": "agentLoopGuard.showStatus",
+        "title": "Show Status",
+        "category": "Agent Loop Guard"
+      },
+      {
+        "command": "agentLoopGuard.copyOpenAIBaseUrl",
+        "title": "Copy OpenAI Base URL",
+        "category": "Agent Loop Guard"
+      },
+      {
+        "command": "agentLoopGuard.copyAnthropicBaseUrl",
+        "title": "Copy Anthropic Base URL",
+        "category": "Agent Loop Guard"
+      },
+      {
+        "command": "agentLoopGuard.copyAgentEnv",
+        "title": "Copy Agent Environment",
+        "category": "Agent Loop Guard"
+      }
+    ],
+    "configuration": {
+      "title": "Agent Loop Guard",
+      "properties": {
+        "agentLoopGuard.autoStart": {
+          "type": "boolean",
+          "default": false,
+          "description": "Start Agent Loop Guard automatically when VS Code starts."
+        },
+        "agentLoopGuard.openDashboardOnStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Open the dashboard after the extension successfully starts the guard."
+        },
+        "agentLoopGuard.stopOnDeactivate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Stop a guard process launched by this extension when the extension deactivates."
+        },
+        "agentLoopGuard.startMode": {
+          "type": "string",
+          "enum": [
+            "cli",
+            "source"
+          ],
+          "default": "cli",
+          "description": "How the extension starts the guard. Use cli for an installed alg command, or source for python -m app.cli from a checkout."
+        },
+        "agentLoopGuard.cliCommand": {
+          "type": "string",
+          "default": "alg",
+          "description": "Command used when startMode is cli."
+        },
+        "agentLoopGuard.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Python executable used when startMode is source."
+        },
+        "agentLoopGuard.sourcePath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the Agent Loop Guard source checkout when startMode is source. Empty means the first workspace folder."
+        },
+        "agentLoopGuard.configPath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional path to agent-loop-guard.yml."
+        },
+        "agentLoopGuard.host": {
+          "type": "string",
+          "default": "127.0.0.1",
+          "description": "Host for the local guard daemon."
+        },
+        "agentLoopGuard.port": {
+          "type": "number",
+          "default": 8787,
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Port for the local guard daemon."
+        },
+        "agentLoopGuard.gatewayKey": {
+          "type": "string",
+          "default": "alg_demo_key",
+          "description": "Gateway key passed to the guard process and copied into agent setup snippets."
+        },
+        "agentLoopGuard.environment": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          },
+          "description": "Extra environment variables passed to the guard process."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "check": "node --check extension.js",
+    "package": "npx --yes @vscode/vsce package --no-dependencies"
+  }
+}

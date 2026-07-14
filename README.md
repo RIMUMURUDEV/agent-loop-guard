@@ -118,6 +118,53 @@ API Key: alg_demo_key
 Model ID: demo-model
 ```
 
+## VS Code Extension
+
+An experimental VS Code wrapper lives in `extensions/vscode`. It starts the local guard daemon, shows health in the status bar, opens the dashboard in a VS Code WebView, and copies agent connection settings.
+
+Install the Python runtime first:
+
+```bash
+pip install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
+```
+
+Run the extension from source:
+
+```bash
+cd extensions/vscode
+npm run check
+```
+
+Then open this repository in VS Code, press `F5`, and run `Agent Loop Guard: Start Guard` in the Extension Development Host.
+
+Package and install a local `.vsix`:
+
+```bash
+cd extensions/vscode
+npm run package
+code --install-extension agent-loop-guard-vscode-0.1.0.vsix
+```
+
+If `alg` is installed globally, keep `agentLoopGuard.startMode` as `cli`. To run from this checkout instead, set:
+
+```json
+{
+  "agentLoopGuard.startMode": "source",
+  "agentLoopGuard.pythonPath": ".venv\\Scripts\\python.exe",
+  "agentLoopGuard.sourcePath": "C:\\path\\to\\agent-loop-guard"
+}
+```
+
+After the guard is running, point agents at:
+
+```text
+OpenAI base URL: http://127.0.0.1:8787/v1
+Anthropic base URL: http://127.0.0.1:8787
+API key: alg_demo_key
+```
+
+See `extensions/vscode/README.md` for all commands and settings.
+
 ## Configuration
 
 Create a config file:
@@ -162,4 +209,3 @@ docker compose up --build
 ## Limits
 
 This is a local pet-project MVP. It only sees traffic routed through its base URL. It does not provide enterprise IAM, distributed leases, legal audit guarantees, or semantic loop detection. Full Content Logging is off by default and should not be enabled for sensitive data unless the data owner understands the risk.
-

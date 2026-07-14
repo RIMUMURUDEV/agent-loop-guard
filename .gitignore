@@ -10,3 +10,5 @@ data/*.db
 data/*.db-*
 data/*.log
 agent-loop-guard.yml
+extensions/vscode/node_modules/
+extensions/vscode/*.vsix
