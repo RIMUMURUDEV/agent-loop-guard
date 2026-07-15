@@ -1,30 +1,33 @@
 # Agent Loop Guard
 
+[![CI](https://github.com/RIMUMURUDEV/agent-loop-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/RIMUMURUDEV/agent-loop-guard/actions/workflows/ci.yml)
+[![Documentation](https://github.com/RIMUMURUDEV/agent-loop-guard/actions/workflows/docs.yml/badge.svg)](https://rimumurudev.github.io/agent-loop-guard/)
+[![Python 3.11-3.13](https://img.shields.io/badge/python-3.11--3.13-3776AB.svg)](https://www.python.org/)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-2F6F44.svg)](LICENSE)
+
 Agent Loop Guard is an Apache-2.0 local safety and observability toolkit for coding agents. It combines a loop guard, MCP permission firewall, session replay, deterministic benchmark lab, and a Docker-backed sandbox technical preview.
 
 The default setup uses a local mock provider, so the demo works without an external API key.
 
+![Agent Loop Guard dashboard](https://raw.githubusercontent.com/RIMUMURUDEV/agent-loop-guard/main/docs/assets/dashboard.png)
+
 ## Install
 
-Install the alpha release from PyPI. The distribution is named `agent-loop-guard-runtime`; the command remains `alg`:
+Install the current alpha directly from GitHub. The installed command is `alg`:
 
 ```bash
-pipx install agent-loop-guard-runtime==0.6.0a1
+pipx install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
 # or
-uv tool install agent-loop-guard-runtime==0.6.0a1
+uv tool install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
 ```
 
 Run once without a permanent installation:
 
 ```bash
-uvx --from agent-loop-guard-runtime==0.6.0a1 alg doctor
+uvx --from git+https://github.com/RIMUMURUDEV/agent-loop-guard.git alg doctor
 ```
 
-To install the current GitHub revision instead:
-
-```bash
-pipx install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
-```
+PyPI publication under the distribution name `agent-loop-guard-runtime` is planned after trusted publishing is configured. The project does not claim that an unpublished package is available.
 
 For development from this checkout:
 
@@ -93,7 +96,7 @@ alg sandbox create | exec | diff | apply | discard | export
 - **Benchmark Lab** runs the bundled 30-task dataset through mock, HTTP, or CLI adapters and computes paired bootstrap confidence intervals.
 - **Sandbox Preview** runs a copied workspace in a resource-limited Docker container and applies no changes before explicit approval.
 
-See the [documentation home](docs/index.md), [Architecture](docs/architecture.md), [Threat Model](docs/security.md), [Benchmark Guide](docs/guides/benchmark.md), and [Sandbox Guide](docs/guides/sandbox.md). A [Russian overview](docs/ru/index.md) is also available.
+Read the [public documentation](https://rimumurudev.github.io/agent-loop-guard/), [Architecture](docs/architecture.md), [Threat Model](docs/security.md), [Benchmark Guide](docs/guides/benchmark.md), and [Sandbox Guide](docs/guides/sandbox.md). A [Russian overview](docs/ru/index.md) is also available.
 
 ## Guard Behavior
 
@@ -166,7 +169,7 @@ alg bench regression-check baseline.jsonl candidate.jsonl
 Parquet, DuckDB, and MLflow are optional:
 
 ```bash
-pip install "agent-loop-guard-runtime[bench]"
+pip install -e ".[bench]"
 ```
 
 The regression command exits `0` for no regression, `1` for a statistically supported regression, and `2` when the result is inconclusive.

@@ -1,0 +1,38 @@
+name: Feature request
+description: Propose a focused improvement or new workflow.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What coding-agent workflow is difficult or unsafe today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the smallest useful outcome, including a CLI or UI example when relevant.
+    validations:
+      required: true
+  - type: dropdown
+    id: module
+    attributes:
+      label: Related module
+      options:
+        - Guard
+        - MCP Firewall
+        - Replay
+        - Benchmark
+        - Sandbox
+        - VS Code
+        - Platform or documentation
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional workarounds or related tools you have tried.

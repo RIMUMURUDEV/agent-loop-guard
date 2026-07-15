@@ -7,20 +7,20 @@
 - Docker on Linux or through WSL2/Docker Desktop for Sandbox.
 - Node.js only when developing or packaging the VS Code extension.
 
-## Install from PyPI
+## Install the current alpha
 
-The current public line is an alpha prerelease. Pin it explicitly while the interfaces are still stabilizing. The PyPI distribution is named `agent-loop-guard-runtime`; the installed command remains `alg`.
+Until the first PyPI publication, install directly from the public GitHub repository. The installed command is `alg`.
 
 === "pipx"
 
     ```bash
-    pipx install agent-loop-guard-runtime==0.6.0a1
+    pipx install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
     ```
 
 === "uv"
 
     ```bash
-    uv tool install agent-loop-guard-runtime==0.6.0a1
+    uv tool install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
     ```
 
 === "virtual environment"
@@ -31,32 +31,32 @@ The current public line is an alpha prerelease. Pin it explicitly while the inte
     python -m venv .venv
     ```
 
-    === "Windows PowerShell"
+    On Windows PowerShell:
 
-        ```powershell
-        .venv\Scripts\Activate.ps1
-        pip install -e ".[dev]"
-        ```
+    ```powershell
+    .venv\Scripts\Activate.ps1
+    pip install -e "."
+    ```
 
-To install the newest repository revision instead, pass the GitHub URL to `pipx` or `uv tool install`.
+    On Linux or macOS:
 
-    === "Linux/macOS"
+    ```bash
+    source .venv/bin/activate
+    pip install -e "."
+    ```
 
-        ```bash
-        source .venv/bin/activate
-        pip install -e ".[dev]"
-        ```
+The distribution name reserved for PyPI is `agent-loop-guard-runtime`. Do not install similarly named packages while this documentation still says publication is pending.
 
 ## Optional dependency groups
 
-The default installation includes Guard, MCP, Replay, the web UI, and JSONL benchmarks.
+The default installation includes Guard, MCP, Replay, the web UI, and JSONL benchmarks. Install optional groups from a cloned checkout:
 
 | Extra | Install command | Adds |
 | --- | --- | --- |
-| `bench` | `pip install "agent-loop-guard-runtime[bench]"` | PyArrow, DuckDB, MLflow |
-| `sandbox` | `pip install "agent-loop-guard-runtime[sandbox]"` | Marker extra; Docker remains external |
-| `docs` | `pip install "agent-loop-guard-runtime[docs]"` | MkDocs Material |
-| `dev` | `pip install "agent-loop-guard-runtime[dev]"` | pytest, coverage, Ruff, HTTP mocks |
+| `bench` | `pip install -e ".[bench]"` | PyArrow, DuckDB, MLflow |
+| `sandbox` | `pip install -e ".[sandbox]"` | Marker extra; Docker remains external |
+| `docs` | `pip install -e ".[docs]"` | MkDocs Material |
+| `dev` | `pip install -e ".[dev]"` | pytest, coverage, Ruff, HTTP mocks |
 
 `mcp` is currently a compatibility marker and adds no package beyond the default dependencies.
 
@@ -71,16 +71,18 @@ alg doctor
 
 ## Upgrade
 
+Reinstall the current repository revision with the same tool used for installation:
+
 === "pipx"
 
     ```bash
-    pipx upgrade agent-loop-guard-runtime
+    pipx install --force git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
     ```
 
 === "uv"
 
     ```bash
-    uv tool upgrade agent-loop-guard-runtime
+    uv tool install --force git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
     ```
 
 === "editable checkout"

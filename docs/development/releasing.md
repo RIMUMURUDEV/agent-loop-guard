@@ -28,8 +28,8 @@ Inspect wheel/sdist contents, install the wheel in a fresh virtual environment, 
 
 1. Merge the reviewed release commit to `main`.
 2. Create an annotated `vX.Y.Z` tag and push it.
-3. Let GitHub Actions build artifacts and create the GitHub Release.
-4. Publish Python artifacts through a configured PyPI trusted publisher.
+3. Publish a GitHub Release and let GitHub Actions attach the wheel, sdist, and VSIX.
+4. After configuring a PyPI trusted publisher, run the `publish-pypi` workflow manually.
 5. Publish the VSIX with the owner-controlled Marketplace publisher token.
 6. Verify GitHub Pages, PyPI installation, VSIX installation, and release checksums.
 
