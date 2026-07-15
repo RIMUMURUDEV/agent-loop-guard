@@ -5,12 +5,10 @@ on:
     types: [published]
 
 jobs:
-  pypi:
+  python-package:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
-      contents: read
-    environment: pypi
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -18,7 +16,9 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install build
       - run: python -m build
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
 
   vscode-package:
     runs-on: ubuntu-latest

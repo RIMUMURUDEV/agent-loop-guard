@@ -54,6 +54,8 @@ alg guard run
 
 The local dashboard is available at `http://127.0.0.1:8787`.
 
+The original project brief is preserved under [source specifications](specs/Agent_Loop_Guard_spec.docx). The implementation and current reference documentation take precedence where the early brief differs from released behavior.
+
 ## Privacy summary
 
 Agent Loop Guard records fingerprints, counters, statuses, durations, policy decisions, and redacted attributes. It does not intentionally store chain-of-thought. Secrets matching supported token patterns and sensitive field names are replaced with `[REDACTED]` before serialization. Redaction reduces risk but cannot recognize every possible secret format, so prompts and source code should still be treated carefully.

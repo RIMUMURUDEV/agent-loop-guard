@@ -15,7 +15,16 @@
     "vscode": "^1.92.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Testing"
+  ],
+  "keywords": [
+    "ai agents",
+    "coding agents",
+    "mcp",
+    "observability",
+    "security",
+    "replay"
   ],
   "activationEvents": [
     "onStartupFinished",
