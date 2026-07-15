@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0a3 - 2026-07-15
+
+- Updated package metadata and installation guidance after the first PyPI publication.
+- Switched the VS Code runtime installer from GitHub source installs to the PyPI distribution.
+
 ## 0.6.0a2 - 2026-07-15
 
 - Replaced the shortened repository license with the canonical Apache License 2.0 text.

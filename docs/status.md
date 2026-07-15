@@ -1,6 +1,6 @@
 # Project Status
 
-Current package version: **`0.6.0a2`**. The repository is an educational open-source project and remains pre-1.0.
+Current package version: **`0.6.0a3`**. The repository is an educational open-source project and remains pre-1.0.
 
 | Area | Current state | Main limitation |
 | --- | --- | --- |
