@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0a2 - 2026-07-15
+
+- Replaced the shortened repository license with the canonical Apache License 2.0 text.
+- Polished the public installation guidance, documentation site, repository metadata, contribution templates, and release artifacts.
+
 ## 0.6.0a1 - 2026-07-14
 
 - Added setup, doctor, status, open, backup, restore, cleanup, and Alembic migrations.
