@@ -102,9 +102,9 @@ async function ensureRuntime(options = {}) {
 async function installRuntime() {
   const method = await vscode.window.showQuickPick(
     [
-      { label: "pipx", description: "Recommended isolated installation", command: "pipx install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git" },
-      { label: "uv tool", description: "Install with uv", command: "uv tool install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git" },
-      { label: "pip", description: "Install into the active Python environment", command: "python -m pip install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git" }
+      { label: "pipx", description: "Recommended isolated installation", command: "pipx install agent-loop-guard-runtime" },
+      { label: "uv tool", description: "Install with uv", command: "uv tool install agent-loop-guard-runtime" },
+      { label: "pip", description: "Install into the active Python environment", command: "python -m pip install agent-loop-guard-runtime" }
     ],
     { placeHolder: "Choose how to install the local runtime" }
   );

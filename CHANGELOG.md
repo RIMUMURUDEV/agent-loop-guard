@@ -5,6 +5,7 @@
 - Replaced the shortened repository license with the canonical Apache License 2.0 text.
 - Polished the public installation guidance, documentation site, repository metadata, contribution templates, and release artifacts.
 - Published the Agent Loop Guard 0.2.0 extension in the VS Code Marketplace.
+- Published `agent-loop-guard-runtime` 0.6.0a2 on PyPI through Trusted Publishing.
 
 ## 0.6.0a1 - 2026-07-14
 

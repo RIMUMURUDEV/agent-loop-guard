@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/RIMUMURUDEV/agent-loop-guard/actions/workflows/ci.yml/badge.svg)](https://github.com/RIMUMURUDEV/agent-loop-guard/actions/workflows/ci.yml)
 [![Documentation](https://github.com/RIMUMURUDEV/agent-loop-guard/actions/workflows/docs.yml/badge.svg)](https://rimumurudev.github.io/agent-loop-guard/)
+[![PyPI](https://img.shields.io/pypi/v/agent-loop-guard-runtime?label=PyPI)](https://pypi.org/project/agent-loop-guard-runtime/)
 [![Python 3.11-3.13](https://img.shields.io/badge/python-3.11--3.13-3776AB.svg)](https://www.python.org/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-2F6F44.svg)](LICENSE)
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/RIMUMURUDEV.agent-loop-guard-vscode?label=VS%20Code)](https://marketplace.visualstudio.com/items?itemName=RIMUMURUDEV.agent-loop-guard-vscode)
@@ -14,21 +15,19 @@ The default setup uses a local mock provider, so the demo works without an exter
 
 ## Install
 
-Install the current alpha directly from GitHub. The installed command is `alg`:
+Install the current alpha from [PyPI](https://pypi.org/project/agent-loop-guard-runtime/). The installed command is `alg`:
 
 ```bash
-pipx install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
+pipx install agent-loop-guard-runtime
 # or
-uv tool install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
+uv tool install agent-loop-guard-runtime
 ```
 
 Run once without a permanent installation:
 
 ```bash
-uvx --from git+https://github.com/RIMUMURUDEV/agent-loop-guard.git alg doctor
+uvx --from agent-loop-guard-runtime alg doctor
 ```
-
-PyPI publication under the distribution name `agent-loop-guard-runtime` is planned after trusted publishing is configured. The project does not claim that an unpublished package is available.
 
 For development from this checkout:
 
@@ -261,7 +260,7 @@ code --install-extension RIMUMURUDEV.agent-loop-guard-vscode
 Install the Python runtime first, then use `Agent Loop Guard: Setup Current Workspace`:
 
 ```bash
-pipx install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
+pipx install agent-loop-guard-runtime
 ```
 
 Run the extension from source:
@@ -353,7 +352,7 @@ docker compose up --build
 
 ## Project Status
 
-This repository is developed as an educational open-source project. Guard, MCP, Replay, and Benchmark are locally testable. Sandbox is a technical preview and its real Docker smoke-test runs only on Linux CI; it could not be executed on the current Windows machine because Docker is not installed. The VS Code extension is publicly available; PyPI publication still requires trusted-publisher account setup.
+This repository is developed as an educational open-source project. Guard, MCP, Replay, and Benchmark are locally testable. Sandbox is a technical preview and its real Docker smoke-test runs only on Linux CI; it could not be executed on the current Windows machine because Docker is not installed. The Python runtime and VS Code extension are publicly available through PyPI and the VS Code Marketplace.
 
 There is no telemetry, paid cloud, subscription, SLA, or closed feature set. Optional donations may be added later, but they do not influence architecture or priorities.
 

@@ -15,7 +15,7 @@ code --install-extension RIMUMURUDEV.agent-loop-guard-vscode
 Install the Python runtime first, or run `Agent Loop Guard: Install Runtime` and choose pipx, uv, or pip:
 
 ```bash
-pipx install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
+pipx install agent-loop-guard-runtime
 ```
 
 Or use a local checkout:

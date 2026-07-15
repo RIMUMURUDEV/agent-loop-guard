@@ -4,7 +4,7 @@ Current package version: **`0.6.0a2`**. The repository is an educational open-so
 
 | Area | Current state | Main limitation |
 | --- | --- | --- |
-| Platform setup | Implemented | PyPI publication depends on publisher setup |
+| Platform setup | Public alpha | Published on PyPI; pre-1.0 compatibility |
 | Loop Guard | Locally usable | Only sees routed traffic; single-node state |
 | MCP Firewall | Technical preview | Task-based execution deferred; local approvals |
 | Replay | Technical preview | UI and export contracts may still evolve |
@@ -27,7 +27,6 @@ Current package version: **`0.6.0a2`**. The repository is an educational open-so
 
 ## Not complete
 
-- PyPI public release
 - MCP task-based execution
 - fully integrated v1.0 dashboard and cross-module workflow
 - broad real-world benchmark datasets and adapter ecosystem
