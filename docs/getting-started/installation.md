@@ -9,18 +9,18 @@
 
 ## Install the current alpha
 
-Until the first PyPI publication, install directly from the public GitHub repository. The installed command is `alg`.
+Install the public alpha from [PyPI](https://pypi.org/project/agent-loop-guard-runtime/). The distribution name is `agent-loop-guard-runtime`, and the installed command is `alg`.
 
 === "pipx"
 
     ```bash
-    pipx install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
+    pipx install agent-loop-guard-runtime
     ```
 
 === "uv"
 
     ```bash
-    uv tool install git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
+    uv tool install agent-loop-guard-runtime
     ```
 
 === "virtual environment"
@@ -45,7 +45,7 @@ Until the first PyPI publication, install directly from the public GitHub reposi
     pip install -e "."
     ```
 
-The distribution name reserved for PyPI is `agent-loop-guard-runtime`. Do not install similarly named packages while this documentation still says publication is pending.
+The package is published through a PyPI Trusted Publisher bound to this repository's `publish-pypi.yml` workflow. No long-lived PyPI token is stored in GitHub.
 
 ## Optional dependency groups
 
@@ -71,18 +71,18 @@ alg doctor
 
 ## Upgrade
 
-Reinstall the current repository revision with the same tool used for installation:
+Upgrade the public package with the same tool used for installation:
 
 === "pipx"
 
     ```bash
-    pipx install --force git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
+    pipx upgrade agent-loop-guard-runtime
     ```
 
 === "uv"
 
     ```bash
-    uv tool install --force git+https://github.com/RIMUMURUDEV/agent-loop-guard.git
+    uv tool upgrade agent-loop-guard-runtime
     ```
 
 === "editable checkout"
