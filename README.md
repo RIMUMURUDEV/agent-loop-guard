@@ -4,6 +4,7 @@
 [![Documentation](https://github.com/RIMUMURUDEV/agent-loop-guard/actions/workflows/docs.yml/badge.svg)](https://rimumurudev.github.io/agent-loop-guard/)
 [![Python 3.11-3.13](https://img.shields.io/badge/python-3.11--3.13-3776AB.svg)](https://www.python.org/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-2F6F44.svg)](LICENSE)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/RIMUMURUDEV.agent-loop-guard-vscode?label=VS%20Code)](https://marketplace.visualstudio.com/items?itemName=RIMUMURUDEV.agent-loop-guard-vscode)
 
 Agent Loop Guard is an Apache-2.0 local safety and observability toolkit for coding agents. It combines a loop guard, MCP permission firewall, session replay, deterministic benchmark lab, and a Docker-backed sandbox technical preview.
 
@@ -249,7 +250,13 @@ Model ID: demo-model
 
 ## VS Code Extension
 
-An experimental VS Code wrapper lives in `extensions/vscode`. It starts the local guard daemon, shows health in the status bar, opens the dashboard and replay views in VS Code WebViews, and copies agent connection settings.
+The VS Code extension starts the local guard daemon, shows health in the status bar, opens dashboard and replay views, and copies agent connection settings.
+
+Install it from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=RIMUMURUDEV.agent-loop-guard-vscode) or from the command line:
+
+```bash
+code --install-extension RIMUMURUDEV.agent-loop-guard-vscode
+```
 
 Install the Python runtime first, then use `Agent Loop Guard: Setup Current Workspace`:
 
@@ -346,7 +353,7 @@ docker compose up --build
 
 ## Project Status
 
-This repository is developed as an educational open-source project. Guard, MCP, Replay, and Benchmark are locally testable. Sandbox is a technical preview and its real Docker smoke-test runs only on Linux CI; it could not be executed on the current Windows machine because Docker is not installed. PyPI and VS Code Marketplace publication require the repository owner to configure the corresponding publisher accounts.
+This repository is developed as an educational open-source project. Guard, MCP, Replay, and Benchmark are locally testable. Sandbox is a technical preview and its real Docker smoke-test runs only on Linux CI; it could not be executed on the current Windows machine because Docker is not installed. The VS Code extension is publicly available; PyPI publication still requires trusted-publisher account setup.
 
 There is no telemetry, paid cloud, subscription, SLA, or closed feature set. Optional donations may be added later, but they do not influence architecture or priorities.
 

@@ -2,6 +2,14 @@
 
 This extension is a lightweight VS Code wrapper around the Agent Loop Guard local gateway. It can start the daemon, show runtime status, open the dashboard in a VS Code WebView, and copy agent connection settings.
 
+## Install
+
+Install from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=RIMUMURUDEV.agent-loop-guard-vscode) or run:
+
+```bash
+code --install-extension RIMUMURUDEV.agent-loop-guard-vscode
+```
+
 ## Requirements
 
 Install the Python runtime first, or run `Agent Loop Guard: Install Runtime` and choose pipx, uv, or pip:
@@ -40,7 +48,7 @@ If you want to run from the checkout instead, set:
 }
 ```
 
-## Package A VSIX
+## Package a VSIX
 
 ```bash
 cd extensions/vscode

@@ -2,9 +2,15 @@
 
 The extension is a local wrapper around the Python runtime. It can find or install `alg`, start and stop the daemon, show Guard and Replay in the Activity Bar, set up the current workspace, and copy agent connection values.
 
-## Install a local VSIX
+## Install
 
-Until Marketplace publication, build from the repository:
+Install the public extension from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=RIMUMURUDEV.agent-loop-guard-vscode) or run:
+
+```bash
+code --install-extension RIMUMURUDEV.agent-loop-guard-vscode
+```
+
+To build and install a local development package instead:
 
 ```bash
 cd extensions/vscode
