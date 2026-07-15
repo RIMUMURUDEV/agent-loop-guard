@@ -10,7 +10,7 @@ Current package version: **`0.6.0a2`**. The repository is an educational open-so
 | Replay | Technical preview | UI and export contracts may still evolve |
 | Benchmark Lab | Technical preview | Starter dataset is synthetic and small |
 | Sandbox | Technical preview | Requires Docker; not a certified boundary |
-| VS Code extension | Experimental | Marketplace publication not completed |
+| VS Code extension | Alpha | Publicly available in the VS Code Marketplace |
 
 ## Implemented
 
@@ -27,7 +27,7 @@ Current package version: **`0.6.0a2`**. The repository is an educational open-so
 
 ## Not complete
 
-- PyPI and VS Code Marketplace public releases
+- PyPI public release
 - MCP task-based execution
 - fully integrated v1.0 dashboard and cross-module workflow
 - broad real-world benchmark datasets and adapter ecosystem
