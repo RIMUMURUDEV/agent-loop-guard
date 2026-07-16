@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.8.0a1 - 2026-07-16
+
+- Added IssuePilot issue import, deterministic implementation planning, explicit
+  Git apply, export, and redacted Replay traces.
+- Added ReproLab package creation, Docker-only execution, status, diff, and
+  portable export.
+- Added CLI and documentation for the `issue` and `repro` command groups.
+
+## 0.7.0a1 - 2026-07-16
+
+- Replaced Demo Lab with an interactive Agent Playground.
+- Added deterministic scenarios, real Guard/Replay persistence, live run
+  inspection, and Playground HTTP APIs.
+- Added `alg playground list`, `run`, and `open`.
+
 ## 0.6.0a3 - 2026-07-15
 
 - Updated package metadata and installation guidance after the first PyPI publication.

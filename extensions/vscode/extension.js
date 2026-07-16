@@ -9,6 +9,7 @@ let healthTimer;
 let guardProcess;
 let dashboardPanel;
 let replayPanel;
+let playgroundPanel;
 
 function activate(context) {
   outputChannel = vscode.window.createOutputChannel("Agent Loop Guard");
@@ -24,6 +25,7 @@ function activate(context) {
     vscode.commands.registerCommand("agentLoopGuard.restart", () => restartGuard()),
     vscode.commands.registerCommand("agentLoopGuard.openDashboard", () => openDashboard()),
     vscode.commands.registerCommand("agentLoopGuard.openReplay", () => openReplay()),
+    vscode.commands.registerCommand("agentLoopGuard.openPlayground", () => openPlayground()),
     vscode.commands.registerCommand("agentLoopGuard.showStatus", () => showStatus()),
     vscode.commands.registerCommand("agentLoopGuard.copyOpenAIBaseUrl", () => copyOpenAIBaseUrl()),
     vscode.commands.registerCommand("agentLoopGuard.copyAnthropicBaseUrl", () =>
@@ -39,6 +41,10 @@ function activate(context) {
     vscode.window.registerWebviewViewProvider(
       "agentLoopGuard.replayView",
       new DashboardViewProvider(() => `${readConfig().baseUrl}/replay`, "Replay")
+    ),
+    vscode.window.registerWebviewViewProvider(
+      "agentLoopGuard.playgroundView",
+      new DashboardViewProvider(() => `${readConfig().baseUrl}/playground`, "Playground")
     )
   );
 
@@ -412,6 +418,43 @@ async function openReplay() {
   replayPanel.webview.html = dashboardHtml(`${config.baseUrl}/replay`);
 }
 
+async function openPlayground() {
+  const config = readConfig();
+  const health = await fetchHealth(config);
+  if (!health.ok) {
+    const choice = await vscode.window.showWarningMessage(
+      "Agent Loop Guard is not running.",
+      "Start Guard",
+      "Open Anyway"
+    );
+    if (choice === "Start Guard") {
+      await startGuard();
+      return;
+    }
+    if (choice !== "Open Anyway") {
+      return;
+    }
+  }
+
+  if (playgroundPanel) {
+    playgroundPanel.reveal(vscode.ViewColumn.One);
+  } else {
+    playgroundPanel = vscode.window.createWebviewPanel(
+      "agentLoopGuardPlayground",
+      "Agent Playground",
+      vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true
+      }
+    );
+    playgroundPanel.onDidDispose(() => {
+      playgroundPanel = undefined;
+    });
+  }
+  playgroundPanel.webview.html = dashboardHtml(`${config.baseUrl}/playground`);
+}
+
 async function showStatus() {
   const config = readConfig();
   const health = await fetchHealth(config);
@@ -439,6 +482,7 @@ async function showStatus() {
     message,
     "Open Dashboard",
     "Open Replay",
+    "Open Playground",
     "Copy OpenAI URL",
     "Copy Env",
     "Stop"
@@ -447,6 +491,8 @@ async function showStatus() {
     await openDashboard();
   } else if (choice === "Open Replay") {
     await openReplay();
+  } else if (choice === "Open Playground") {
+    await openPlayground();
   } else if (choice === "Copy OpenAI URL") {
     await copyOpenAIBaseUrl();
   } else if (choice === "Copy Env") {

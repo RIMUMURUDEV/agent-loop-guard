@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import webbrowser
+import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -100,6 +101,219 @@ def _cmd_open(args: argparse.Namespace) -> int:
     url = args.base_url.rstrip("/") + ("/replay" if args.replay else "")
     if not webbrowser.open(url):
         print(url)
+    return 0
+
+
+def _cmd_playground_list(_: argparse.Namespace) -> int:
+    from app.playground.service import list_scenarios
+
+    for scenario in list_scenarios():
+        print(f"{scenario['id']:12} {scenario['name']} - {scenario['description']}")
+    return 0
+
+
+def _cmd_playground_run(args: argparse.Namespace) -> int:
+    url = args.base_url.rstrip("/") + "/api/v1/playground/runs"
+    try:
+        with httpx.Client(timeout=20) as client:
+            response = client.post(url, json={"scenario": args.scenario, "mode": args.mode})
+        response.raise_for_status()
+        payload = response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        print(f"Playground run failed: {exc}", file=sys.stderr)
+        return 1
+    session = payload["session"]
+    trace = payload.get("trace") or {}
+    print(f"Playground run: {payload['id']}")
+    print(
+        f"requests={session['request_count']} flags={session['flagged_count']} "
+        f"blocks={session['blocked_count']} tokens={session['total_tokens']}"
+    )
+    if trace:
+        print(f"replay={args.base_url.rstrip('/')}/replay/{trace['id']}")
+    return 0
+
+
+def _cmd_playground_open(args: argparse.Namespace) -> int:
+    url = args.base_url.rstrip("/") + "/playground"
+    if not webbrowser.open(url):
+        print(url)
+    return 0
+
+
+def _issue_root(args: argparse.Namespace) -> Path:
+    return Path(args.root or ".agent-loop-guard/issues")
+
+
+def _cmd_issue_import(args: argparse.Namespace) -> int:
+    from app.issuepilot.core import import_issue
+
+    try:
+        issue = import_issue(args.source, _issue_root(args), token=os.getenv("GITHUB_TOKEN"))
+    except (OSError, ValueError, httpx.HTTPError, json.JSONDecodeError) as exc:
+        print(f"Issue import failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"Imported {issue['id']}: {issue['title']}")
+    return 0
+
+
+def _record_local_trace(config: AppConfig, payload: dict) -> str:
+    now = datetime.now(UTC)
+    trace_id = f"trc_{os.urandom(12).hex()}"
+    bundle = {
+        "schema_version": "trace.v1",
+        "run": {
+            "trace_id": trace_id,
+            "project_id": "default",
+            "task_id": payload["task_id"],
+            "status": "ok",
+            "start_ns": int(now.timestamp() * 1_000_000_000),
+            "end_ns": int(now.timestamp() * 1_000_000_000) + 1_000_000,
+            "attributes": payload["attributes"],
+        },
+        "spans": [
+            {
+                "span_id": f"spn_{os.urandom(12).hex()}",
+                "name": payload["span_name"],
+                "status": "ok",
+                "start_ns": int(now.timestamp() * 1_000_000_000),
+                "end_ns": int(now.timestamp() * 1_000_000_000) + 1_000_000,
+                "attributes": payload["attributes"],
+            }
+        ],
+        "events": [],
+        "artifacts": [],
+    }
+    with _repository(config)() as db:
+        return Repository(db).import_trace_bundle(bundle).id
+
+
+def _cmd_issue_plan(args: argparse.Namespace) -> int:
+    from app.issuepilot.core import plan_issue
+
+    try:
+        plan = plan_issue(args.issue_id, _issue_root(args))
+        trace_id = _record_local_trace(
+            _config(args.config),
+            {
+                "task_id": args.issue_id,
+                "span_name": "issue.plan",
+                "attributes": {
+                    "issue.id": args.issue_id,
+                    "issue.title_hash": __import__("hashlib").sha256(
+                        plan["title"].encode()
+                    ).hexdigest(),
+                    "plan.branch": plan["branch"],
+                    "plan.checks": len(plan["checklist"]),
+                },
+            },
+        )
+    except (OSError, ValueError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"Issue planning failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"Plan: {_issue_root(args).resolve() / args.issue_id / 'PLAN.md'}")
+    print(f"Branch: {plan['branch']}")
+    print(f"Replay: {trace_id}")
+    return 0
+
+
+def _cmd_issue_apply(args: argparse.Namespace) -> int:
+    from app.issuepilot.core import apply_issue
+
+    try:
+        result = apply_issue(args.issue_id, _issue_root(args), Path(args.repository))
+    except (OSError, ValueError, RuntimeError, FileNotFoundError, json.JSONDecodeError) as exc:
+        print(f"Issue apply failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"Switched {result['repository']} to {result['branch']}")
+    return 0
+
+
+def _cmd_issue_export(args: argparse.Namespace) -> int:
+    from app.issuepilot.core import export_issue
+
+    try:
+        destination = export_issue(args.issue_id, _issue_root(args), Path(args.output))
+    except (OSError, ValueError, FileNotFoundError) as exc:
+        print(f"Issue export failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"IssuePilot package written to {destination}")
+    return 0
+
+
+def _repro(args: argparse.Namespace):
+    from app.reprolab.core import ReproLab
+
+    return ReproLab(Path(args.root) if args.root else None)
+
+
+def _cmd_repro_create(args: argparse.Namespace) -> int:
+    try:
+        manifest = _repro(args).create(
+            args.report,
+            Path(args.source),
+            setup_command=args.setup,
+            test_command=args.test,
+            image=args.image,
+        )
+    except (OSError, ValueError) as exc:
+        print(f"Repro creation failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"Created reproducible package {manifest['id']}")
+    return 0
+
+
+def _cmd_repro_run(args: argparse.Namespace) -> int:
+    try:
+        status = _repro(args).run(args.repro_id, timeout=args.timeout)
+        trace_id = _record_local_trace(
+            _config(args.config),
+            {
+                "task_id": args.repro_id,
+                "span_name": "repro.run",
+                "attributes": {
+                    "repro.id": args.repro_id,
+                    "repro.status": status["manifest"]["status"],
+                    "sandbox.id": status["manifest"].get("sandbox_id"),
+                },
+            },
+        )
+    except (OSError, ValueError, RuntimeError, FileNotFoundError) as exc:
+        print(f"Repro run failed: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(status, indent=2))
+    print(f"Replay: {trace_id}")
+    return 0 if status["manifest"]["status"] == "passed" else 1
+
+
+def _cmd_repro_status(args: argparse.Namespace) -> int:
+    try:
+        print(json.dumps(_repro(args).status(args.repro_id), indent=2))
+    except (OSError, ValueError, FileNotFoundError) as exc:
+        print(f"Repro status failed: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _cmd_repro_diff(args: argparse.Namespace) -> int:
+    try:
+        changes = _repro(args).diff(args.repro_id)
+    except (OSError, ValueError, FileNotFoundError) as exc:
+        print(f"Repro diff failed: {exc}", file=sys.stderr)
+        return 1
+    print(json.dumps(changes, indent=2) if args.json else "\n".join(
+        f"{item['status']:8} {item['path']}" for item in changes
+    ))
+    return 0
+
+
+def _cmd_repro_export(args: argparse.Namespace) -> int:
+    try:
+        destination = _repro(args).export(args.repro_id, Path(args.output))
+    except (OSError, ValueError, FileNotFoundError, zipfile.BadZipFile) as exc:
+        print(f"Repro export failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"Repro package written to {destination}")
     return 0
 
 
@@ -461,6 +675,72 @@ def build_parser() -> argparse.ArgumentParser:
     open_command.add_argument("--base-url", default="http://127.0.0.1:8787")
     open_command.add_argument("--replay", action="store_true")
     open_command.set_defaults(func=_cmd_open)
+
+    playground = sub.add_parser("playground", help="interactive deterministic agent scenarios")
+    playground_sub = playground.add_subparsers(dest="playground_command", required=True)
+    playground_list = playground_sub.add_parser("list", help="list bundled scenarios")
+    playground_list.set_defaults(func=_cmd_playground_list)
+    playground_run = playground_sub.add_parser("run", help="run a scenario")
+    playground_run.add_argument("scenario")
+    playground_run.add_argument("--mode", choices=["shadow", "enforce"], default="shadow")
+    playground_run.add_argument("--base-url", default="http://127.0.0.1:8787")
+    playground_run.set_defaults(func=_cmd_playground_run)
+    playground_open = playground_sub.add_parser("open", help="open the local playground")
+    playground_open.add_argument("--base-url", default="http://127.0.0.1:8787")
+    playground_open.set_defaults(func=_cmd_playground_open)
+
+    issue = sub.add_parser("issue", help="IssuePilot planning with explicit apply")
+    issue_sub = issue.add_subparsers(dest="issue_command", required=True)
+    issue_import = issue_sub.add_parser("import", help="import a GitHub issue URL or JSON")
+    issue_import.add_argument("source")
+    issue_import.add_argument("--root")
+    issue_import.set_defaults(func=_cmd_issue_import)
+    issue_plan = issue_sub.add_parser("plan", help="generate a deterministic implementation plan")
+    issue_plan.add_argument("issue_id")
+    issue_plan.add_argument("--root")
+    issue_plan.add_argument("--config")
+    issue_plan.set_defaults(func=_cmd_issue_plan)
+    issue_apply = issue_sub.add_parser("apply", help="explicitly create or switch the planned branch")
+    issue_apply.add_argument("issue_id")
+    issue_apply.add_argument("--repository", default=".")
+    issue_apply.add_argument("--root")
+    issue_apply.set_defaults(func=_cmd_issue_apply)
+    issue_export = issue_sub.add_parser("export", help="export an IssuePilot package")
+    issue_export.add_argument("issue_id")
+    issue_export.add_argument("--root")
+    issue_export.add_argument("--output", default="issuepilot-export.zip")
+    issue_export.set_defaults(func=_cmd_issue_export)
+
+    repro = sub.add_parser("repro", help="ReproLab bug reproduction packages")
+    repro_sub = repro.add_subparsers(dest="repro_command", required=True)
+    repro_create = repro_sub.add_parser("create", help="create a reproduction manifest")
+    repro_create.add_argument("report")
+    repro_create.add_argument("--source", default=".")
+    repro_create.add_argument("--setup")
+    repro_create.add_argument("--test", default="python -m pytest -q")
+    repro_create.add_argument("--image", default="python:3.12-slim")
+    repro_create.add_argument("--root")
+    repro_create.set_defaults(func=_cmd_repro_create)
+    repro_run = repro_sub.add_parser("run", help="execute the reproduction in Docker")
+    repro_run.add_argument("repro_id")
+    repro_run.add_argument("--timeout", type=float, default=300)
+    repro_run.add_argument("--root")
+    repro_run.add_argument("--config")
+    repro_run.set_defaults(func=_cmd_repro_run)
+    repro_status = repro_sub.add_parser("status", help="show reproduction state")
+    repro_status.add_argument("repro_id")
+    repro_status.add_argument("--root")
+    repro_status.set_defaults(func=_cmd_repro_status)
+    repro_diff = repro_sub.add_parser("diff", help="show sandbox changes")
+    repro_diff.add_argument("repro_id")
+    repro_diff.add_argument("--root")
+    repro_diff.add_argument("--json", action="store_true")
+    repro_diff.set_defaults(func=_cmd_repro_diff)
+    repro_export = repro_sub.add_parser("export", help="export report, logs, environment, and diff")
+    repro_export.add_argument("repro_id")
+    repro_export.add_argument("--root")
+    repro_export.add_argument("--output", default="reprolab-export.zip")
+    repro_export.set_defaults(func=_cmd_repro_export)
 
     backup = sub.add_parser("backup", help="create a local data backup")
     backup.add_argument("--config")

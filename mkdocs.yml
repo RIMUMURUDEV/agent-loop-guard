@@ -60,6 +60,9 @@ nav:
       - Configuration: getting-started/configuration.md
   - Guides:
       - Loop Guard: guides/guard.md
+      - Agent Playground: guides/playground.md
+      - IssuePilot: guides/issuepilot.md
+      - ReproLab: guides/reprolab.md
       - MCP Permission Firewall: guides/mcp-firewall.md
       - Session Replay: guides/replay.md
       - Benchmark Lab: guides/benchmark.md

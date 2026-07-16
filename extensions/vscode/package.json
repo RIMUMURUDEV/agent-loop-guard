@@ -2,7 +2,7 @@
   "name": "agent-loop-guard-vscode",
   "displayName": "Agent Loop Guard",
   "description": "Start and monitor the local Agent Loop Guard gateway from VS Code.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "RIMUMURUDEV",
   "license": "Apache-2.0",
   "repository": {
@@ -33,6 +33,7 @@
     "onCommand:agentLoopGuard.restart",
     "onCommand:agentLoopGuard.openDashboard",
     "onCommand:agentLoopGuard.openReplay",
+    "onCommand:agentLoopGuard.openPlayground",
     "onCommand:agentLoopGuard.showStatus",
     "onCommand:agentLoopGuard.copyOpenAIBaseUrl",
     "onCommand:agentLoopGuard.copyAnthropicBaseUrl",
@@ -40,7 +41,8 @@
     "onCommand:agentLoopGuard.installRuntime",
     "onCommand:agentLoopGuard.setupWorkspace",
     "onView:agentLoopGuard.guardView",
-    "onView:agentLoopGuard.replayView"
+    "onView:agentLoopGuard.replayView",
+    "onView:agentLoopGuard.playgroundView"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -68,6 +70,11 @@
       {
         "command": "agentLoopGuard.openReplay",
         "title": "Open Replay",
+        "category": "Agent Loop Guard"
+      },
+      {
+        "command": "agentLoopGuard.openPlayground",
+        "title": "Open Playground",
         "category": "Agent Loop Guard"
       },
       {
@@ -121,6 +128,11 @@
           "type": "webview",
           "id": "agentLoopGuard.replayView",
           "name": "Replay"
+        },
+        {
+          "type": "webview",
+          "id": "agentLoopGuard.playgroundView",
+          "name": "Playground"
         }
       ]
     },

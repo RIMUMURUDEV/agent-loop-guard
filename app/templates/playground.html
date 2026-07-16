@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Playground | Agent Loop Guard{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Agent Playground</h1>
+    <p class="muted">Run deterministic agent failures and inspect the Guard and Replay evidence.</p>
+  </div>
+</header>
+
+<section class="playground-layout">
+  <div class="panel scenario-list">
+    <h2>Scenarios</h2>
+    {% for scenario in scenarios %}
+    <button class="scenario-button{% if loop.first %} selected{% endif %}" type="button"
+      data-scenario="{{ scenario.id }}">
+      <strong>{{ scenario.name }}</strong>
+      <span>{{ scenario.description }}</span>
+    </button>
+    {% endfor %}
+    <label for="playground-mode">Guard mode</label>
+    <select id="playground-mode">
+      <option value="shadow">Shadow</option>
+      <option value="enforce">Enforce</option>
+    </select>
+    <button id="playground-run" type="button">Run scenario</button>
+  </div>
+
+  <div>
+    <section class="metric-grid" id="playground-metrics">
+      <div class="metric"><span>Requests</span><strong>0</strong></div>
+      <div class="metric"><span>Tool calls</span><strong>0</strong></div>
+      <div class="metric"><span>Flags</span><strong>0</strong></div>
+      <div class="metric"><span>Blocks</span><strong>0</strong></div>
+      <div class="metric"><span>Tokens</span><strong>0</strong></div>
+    </section>
+    <section class="panel">
+      <div class="page-head">
+        <h2>Live event stream</h2>
+        <span class="status" id="playground-status">Ready</span>
+      </div>
+      <div class="event-stream" id="playground-events">
+        <p class="muted">Choose a scenario and run it.</p>
+      </div>
+    </section>
+    <section class="panel" id="playground-replay" hidden>
+      <h2>Replay</h2>
+      <p id="playground-replay-summary"></p>
+      <a class="button secondary" id="playground-replay-link" href="/replay">Open trace</a>
+    </section>
+  </div>
+</section>
+
+<script>
+(() => {
+  let selected = "{{ scenarios[0].id }}";
+  const buttons = [...document.querySelectorAll(".scenario-button")];
+  const runButton = document.querySelector("#playground-run");
+  const status = document.querySelector("#playground-status");
+  const stream = document.querySelector("#playground-events");
+  const metrics = [...document.querySelectorAll("#playground-metrics strong")];
+
+  buttons.forEach((button) => button.addEventListener("click", () => {
+    selected = button.dataset.scenario;
+    buttons.forEach((item) => item.classList.toggle("selected", item === button));
+  }));
+
+  runButton.addEventListener("click", async () => {
+    runButton.disabled = true;
+    status.textContent = "Running";
+    status.className = "status status-running";
+    stream.innerHTML = '<p class="muted">Creating guarded requests and Replay events...</p>';
+    try {
+      const response = await fetch("/api/v1/playground/runs", {
+        method: "POST",
+        headers: {"content-type": "application/json"},
+        body: JSON.stringify({
+          scenario: selected,
+          mode: document.querySelector("#playground-mode").value
+        })
+      });
+      const run = await response.json();
+      if (!response.ok) throw new Error(run.detail || "Playground run failed");
+      render(run);
+      status.textContent = "Complete";
+      status.className = "status status-ok";
+    } catch (error) {
+      status.textContent = "Error";
+      status.className = "status status-error";
+      stream.textContent = error.message;
+    } finally {
+      runButton.disabled = false;
+    }
+  });
+
+  function render(run) {
+    const toolCalls = run.spans.filter((span) => span.name === "tool.call").length;
+    const values = [
+      run.session.request_count,
+      toolCalls,
+      run.session.flagged_count,
+      run.session.blocked_count,
+      run.session.total_tokens
+    ];
+    metrics.forEach((node, index) => node.textContent = values[index]);
+    const rows = [
+      ...run.requests.map((item) => ({
+        type: "model.request",
+        detail: `${item.status} | ${item.decision}${item.reason_code ? " | " + item.reason_code : ""}`
+      })),
+      ...run.events.map((item) => ({
+        type: item.type,
+        detail: `${item.severity}${item.reason_code ? " | " + item.reason_code : ""}`
+      })),
+      ...run.trace_events.map((item) => ({
+        type: item.name,
+        detail: item.severity
+      }))
+    ];
+    stream.innerHTML = rows.length
+      ? rows.map((row, index) =>
+          `<div class="event-row" style="animation-delay:${index * 45}ms"><code>${escapeHtml(row.type)}</code><span>${escapeHtml(row.detail)}</span></div>`
+        ).join("")
+      : '<p class="muted">No events were recorded.</p>';
+    const replay = document.querySelector("#playground-replay");
+    replay.hidden = !run.trace;
+    if (run.trace) {
+      document.querySelector("#playground-replay-summary").textContent =
+        `${run.trace.span_count} spans | ${run.trace.event_count} events | ${run.trace.duration_ms} ms`;
+      document.querySelector("#playground-replay-link").href = `/replay/${run.trace.id}`;
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+    })[char]);
+  }
+})();
+</script>
+{% endblock %}

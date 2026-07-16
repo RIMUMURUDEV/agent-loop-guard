@@ -7,11 +7,13 @@
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-2F6F44.svg)](LICENSE)
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/RIMUMURUDEV.agent-loop-guard-vscode?label=VS%20Code)](https://marketplace.visualstudio.com/items?itemName=RIMUMURUDEV.agent-loop-guard-vscode)
 
-Agent Loop Guard is an Apache-2.0 local safety and observability toolkit for coding agents. It combines a loop guard, MCP permission firewall, session replay, deterministic benchmark lab, and a Docker-backed sandbox technical preview.
+Agent Loop Guard is an Apache-2.0 local safety and observability toolkit for coding agents. It combines a loop guard, MCP permission firewall, session replay, deterministic benchmark lab, Docker-backed sandbox preview, interactive agent playground, IssuePilot, and ReproLab.
 
 The default setup uses a local mock provider, so the demo works without an external API key.
 
 ![Agent Loop Guard dashboard](https://raw.githubusercontent.com/RIMUMURUDEV/agent-loop-guard/main/docs/assets/dashboard.png)
+
+![Agent Playground](docs/assets/playground.png)
 
 ## Install
 
@@ -40,10 +42,11 @@ alg doctor
 alg guard run
 ```
 
-Open `http://127.0.0.1:8787`, then run Demo Lab or:
+Open `http://127.0.0.1:8787/playground`, then run a deterministic scenario:
 
 ```bash
-alg demo exact-loop
+alg playground list
+alg playground run exact-loop
 ```
 
 Default local gateway key:
@@ -77,13 +80,16 @@ HEAD /
 
 Use `Authorization: Bearer alg_demo_key` or `x-api-key: alg_demo_key`.
 
-`alg setup` creates a local YAML configuration and connection profiles for Codex, Claude Code, Cline, and OpenCode under `.agent-loop-guard/profiles`. Open `http://127.0.0.1:8787`, then run Demo Lab or `alg demo exact-loop`.
+`alg setup` creates a local YAML configuration and connection profiles for Codex, Claude Code, Cline, and OpenCode under `.agent-loop-guard/profiles`. Open `http://127.0.0.1:8787/playground`, then run a deterministic scenario without an external API key.
 
 ## Modules
 
 ```text
 alg setup | doctor | status | open
 alg guard run
+alg playground list | run | open
+alg issue import | plan | apply | export
+alg repro create | run | status | diff | export
 alg mcp run | serve | validate-policy | test-server
 alg replay import | export
 alg bench dataset validate | run | compare | regression-check
@@ -91,12 +97,52 @@ alg sandbox create | exec | diff | apply | discard | export
 ```
 
 - **Guard** detects exact request, tool, error, and sequence loops with Shadow and Enforce modes.
+- **Playground** visualizes deterministic requests, tool calls, policy decisions, loops, tokens, and Replay traces.
+- **IssuePilot** converts a GitHub issue or local JSON fixture into an explicit technical plan and opt-in Git branch.
+- **ReproLab** packages bug reports, environment metadata, sandbox logs, and diffs into portable local archives.
 - **MCP Firewall** proxies stdio and Streamable HTTP, validates schemas, filters discovery, and applies YAML policies.
 - **Replay** stores redacted traces, spans, events, costs, deterministic failure tags, and JSONL/OpenTelemetry exports.
 - **Benchmark Lab** runs the bundled 30-task dataset through mock, HTTP, or CLI adapters and computes paired bootstrap confidence intervals.
 - **Sandbox Preview** runs a copied workspace in a resource-limited Docker container and applies no changes before explicit approval.
 
 Read the [public documentation](https://rimumurudev.github.io/agent-loop-guard/), [Architecture](docs/architecture.md), [Threat Model](docs/security.md), [Benchmark Guide](docs/guides/benchmark.md), and [Sandbox Guide](docs/guides/sandbox.md). A [Russian overview](docs/ru/index.md) is also available.
+
+## Agent Playground
+
+```bash
+alg playground list
+alg playground run exact-loop
+alg playground open
+```
+
+The HTTP API exposes `GET /api/v1/playground/scenarios`,
+`POST /api/v1/playground/runs`, and `GET /api/v1/playground/runs/{id}`.
+Scenario runs are stored as ordinary redacted Replay traces.
+
+## IssuePilot
+
+```bash
+alg issue import issue.json
+alg issue plan ISSUE_ID
+alg issue apply ISSUE_ID --repository .
+alg issue export ISSUE_ID --output issue-plan.zip
+```
+
+Import and planning never modify GitHub or Git. `apply` is the explicit boundary
+that creates or switches the proposed branch.
+
+## ReproLab
+
+```bash
+alg repro create bug-report.md --source .
+alg repro status REPRO_ID
+alg repro run REPRO_ID
+alg repro diff REPRO_ID
+alg repro export REPRO_ID --output reproduction.zip
+```
+
+Package creation, inspection, and export work without Docker. Commands from a
+bug report run only through the Docker Sandbox workspace.
 
 ## Guard Behavior
 

@@ -109,3 +109,6 @@ Important settings:
 The runtime remains a separate Python process. The extension detects `alg`, offers installation when it is missing, and never downloads or executes an installer without a command selected by the user.
 
 The extension only stops guard processes it started itself. If the daemon is already running from another terminal, the Stop command leaves it alone.
+Version 0.3 adds an Agent Playground view and command alongside Guard and
+Replay. Playground runs deterministic local scenarios and links each result to
+its Replay trace.

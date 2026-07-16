@@ -10,6 +10,7 @@ from app.api.admin_routes import router as admin_router
 from app.api.anthropic_routes import router as anthropic_router
 from app.api.mcp_routes import router as mcp_router
 from app.api.openai_routes import router as openai_router
+from app.api.playground_routes import router as playground_router
 from app.api.replay_routes import router as replay_router
 from app.api.ui_routes import router as ui_router
 from app.core.config import AppConfig
@@ -23,7 +24,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
 
     app = FastAPI(
         title="Agent Loop Guard",
-        version="0.6.0a1",
+        version="0.8.0a1",
         description="Local runtime guard for coding agents.",
     )
     app.state.config = config
@@ -47,6 +48,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
     app.include_router(admin_router)
     app.include_router(replay_router)
     app.include_router(mcp_router)
+    app.include_router(playground_router)
 
     if config.admin_ui:
         static_dir = Path(__file__).resolve().parent / "static"

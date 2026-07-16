@@ -1069,6 +1069,14 @@ class Repository:
     def get_trace_run(self, trace_id: str) -> TraceRun | None:
         return self.db.get(TraceRun, trace_id)
 
+    def trace_for_session(self, session_id: str) -> TraceRun | None:
+        return self.db.scalar(
+            select(TraceRun)
+            .where(TraceRun.source_session_id == session_id)
+            .order_by(desc(TraceRun.created_at))
+            .limit(1)
+        )
+
     def trace_spans(self, trace_id: str) -> list[TraceSpan]:
         return list(
             self.db.scalars(

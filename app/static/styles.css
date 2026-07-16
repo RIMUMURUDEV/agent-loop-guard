@@ -268,6 +268,58 @@ input, select {
   gap: 10px;
 }
 
+.playground-layout {
+  display: grid;
+  grid-template-columns: minmax(250px, 330px) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.scenario-list {
+  align-self: start;
+  display: grid;
+  gap: 10px;
+}
+
+.scenario-button {
+  display: grid;
+  gap: 4px;
+  min-height: 0;
+  padding: 12px;
+  border-color: #d6dde5;
+  background: #fff;
+  color: #18202a;
+  text-align: left;
+}
+
+.scenario-button span {
+  color: #667382;
+  font-size: 13px;
+}
+
+.scenario-button.selected {
+  border-color: #0c5a9e;
+  background: #eef6ff;
+}
+
+.event-stream {
+  display: grid;
+  gap: 8px;
+}
+
+.event-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 220px) 1fr;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e7ebf0;
+  animation: event-in 180ms ease both;
+}
+
+@keyframes event-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .status {
   border-radius: 999px;
   padding: 3px 8px;
@@ -322,6 +374,11 @@ input, select {
   }
 
   .approval-row {
+    grid-template-columns: 1fr;
+  }
+
+  .playground-layout,
+  .event-row {
     grid-template-columns: 1fr;
   }
 }

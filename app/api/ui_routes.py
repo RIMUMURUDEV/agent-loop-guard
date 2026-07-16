@@ -25,6 +25,7 @@ from app.db.repository import (
     trace_span_dict,
 )
 from app.db.session import get_db
+from app.playground.service import list_scenarios
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parents[1] / "templates"))
@@ -267,14 +268,17 @@ def resume_agent_ui(agent_id: str, db: Session = Depends(get_db)):
     return RedirectResponse("/agents", status_code=303)
 
 
-@router.get("/demo")
-def demo_page(request: Request, db: Session = Depends(get_db)):
-    repo = Repository(db)
+@router.get("/playground")
+def playground_page(request: Request):
     return templates.TemplateResponse(
         request,
-        "demo.html",
-        {"sessions": [session_dict(item) for item in repo.list_sessions(10)], "result": None},
+        "playground.html",
+        {"scenarios": list_scenarios()},
     )
+
+@router.get("/demo")
+def legacy_demo_page():
+    return RedirectResponse("/playground", status_code=307)
 
 
 @router.post("/demo/run")

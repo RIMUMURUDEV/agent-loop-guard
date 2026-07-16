@@ -1,6 +1,6 @@
 # Project Status
 
-Current package version: **`0.6.0a3`**. The repository is an educational open-source project and remains pre-1.0.
+Current package version: **`0.8.0a1`**. The repository is an educational open-source project and remains pre-1.0.
 
 | Area | Current state | Main limitation |
 | --- | --- | --- |
@@ -10,6 +10,9 @@ Current package version: **`0.6.0a3`**. The repository is an educational open-so
 | Replay | Technical preview | UI and export contracts may still evolve |
 | Benchmark Lab | Technical preview | Starter dataset is synthetic and small |
 | Sandbox | Technical preview | Requires Docker; not a certified boundary |
+| Agent Playground | Public alpha | Deterministic scenarios are intentionally small |
+| IssuePilot | Public alpha | Planning is deterministic and does not replace review |
+| ReproLab | Technical preview | Arbitrary execution requires Docker Sandbox |
 | VS Code extension | Alpha | Publicly available in the VS Code Marketplace |
 
 ## Implemented
@@ -21,6 +24,9 @@ Current package version: **`0.6.0a3`**. The repository is an educational open-so
 - Replay SDK, automatic model traces, JSON/JSONL/OTel exchange, comparison, cost and failure tags
 - 30-task versioned benchmark dataset, three adapters, deterministic/custom scorers, paired bootstrap gate
 - copied-workspace Docker runner with diff, selective apply, discard, and export
+- deterministic Playground scenarios persisted as Guard and Replay records
+- GitHub/local issue import, implementation planning, explicit Git apply, and export
+- local bug reproduction packages with environment manifests and Docker-only execution
 - VS Code Activity Bar integration and workspace setup
 - Alembic-managed SQLite schema, backup, restore, cleanup, diagnostics
 - no product telemetry and metadata-only logging by default

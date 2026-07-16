@@ -14,9 +14,39 @@ The executable is `alg`. Run `alg COMMAND --help` for the parser-generated refer
 | `alg sample-config` | none | Print sample YAML to stdout |
 | `alg run` | `--config`, `--host`, `--port`, `--log-level` | Start the gateway; legacy alias for `guard run` |
 | `alg guard run` | `--config`, `--host`, `--port`, `--log-level` | Start Guard, UI, Replay, and configured HTTP MCP proxies |
-| `alg demo [SCENARIO]` | `--mode shadow|enforce`, `--base-url` | Run a deterministic demo against a daemon |
+| `alg playground list` | none | List deterministic local scenarios |
+| `alg playground run SCENARIO` | `--mode shadow|enforce`, `--base-url` | Run a scenario against a daemon |
+| `alg playground open` | `--base-url` | Open the interactive Playground |
+| `alg demo [SCENARIO]` | `--mode shadow|enforce`, `--base-url` | Legacy scenario alias |
 
 The default demo scenario is `exact-loop`.
+
+## IssuePilot
+
+```text
+alg issue import SOURCE [--root DIRECTORY] [--token TOKEN]
+alg issue plan ISSUE_ID [--root DIRECTORY]
+alg issue apply ISSUE_ID [--root DIRECTORY] [--repository DIRECTORY]
+alg issue export ISSUE_ID [--root DIRECTORY] [--output FILE]
+```
+
+`SOURCE` is a GitHub issue URL or local JSON fixture. Import and planning are
+read-only. `apply` is required before IssuePilot creates or switches a Git
+branch. The default local root is `.agent-loop-guard/issues`.
+
+## ReproLab
+
+```text
+alg repro create REPORT [--source DIRECTORY] [--setup-command COMMAND]
+                         [--test-command COMMAND] [--image IMAGE]
+alg repro run REPRO_ID [--root DIRECTORY] [--timeout SEC]
+alg repro status REPRO_ID [--root DIRECTORY]
+alg repro diff REPRO_ID [--root DIRECTORY] [--json]
+alg repro export REPRO_ID [--root DIRECTORY] [--output FILE]
+```
+
+`REPORT` is a Markdown/text file or inline report. Creation, status, diff, and
+export work without Docker. `run` delegates every command to the Docker Sandbox.
 
 ## Data operations
 
